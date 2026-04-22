@@ -2,7 +2,9 @@ import pandas as pd
 import os
 import datetime
 import re
+import streamlit as st
 
+@st.cache_data
 def dataset_clean():
     #Select Directory Dataset
     base_dir = os.path.dirname(__file__)
