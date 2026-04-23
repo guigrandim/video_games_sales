@@ -15,7 +15,7 @@ def dataset_clean():
     df_catch_pubs_devs = pd.read_csv(os.path.join(dataset_dir, 'dataset_limpeza.csv'), sep=';')
     df1 = df.copy()
     
-    #1. Creating the name_console; manufacture; generation, plataform and cycle life
+    #1. Creating the name_console; manufacture; generation, plataform, cycle life and release_date_console
     console_name = {'PS3' : 'Playstation 3', 'PS4' : 'Playstation 4', 'PS2' : 'Playstation 2', 'X360' : 'Xbox 360', 'XOne' : 'Xbox One',
                 'PC' : 'PC', 'PSP' : 'PSP', 'Wii' : 'Nintendo Wii', 'PS' : 'PlayStation', 'DS' : 'Nintendo DS', '2600' : 'Atari 2600', 
                 'GBA' : 'GameBoy Advanced', 'NES': 'NES', 'XB' : 'Xbox', 'PSN' : 'Playstation Digital', 'GEN' : 'Sega Genesis', 
@@ -144,6 +144,123 @@ def dataset_clean():
     df_ref['activity_years'] = df_ref['activity_years'].replace(0,1)
     
     df1 = df1.merge(df_ref[['start_year','end_year','activity_years',]], left_on = 'console', right_index=True, how='left')
+    
+    platform_launch = {
+    # Sony
+    'PS':    '1994-12-03',
+    'PS2':   '2000-03-04',
+    'PS3':   '2006-11-11',
+    'PS4':   '2013-11-15',
+    'PS5':   '2020-11-12',
+    'PSP':   '2004-12-12',
+    'PSV':   '2011-12-17',
+    'PSN':   '2006-11-11',  # mesmo lançamento do PS3
+
+    # Microsoft
+    'XB':    '2001-11-15',
+    'X360':  '2005-11-22',
+    'XOne':  '2013-11-22',
+    'XS':    '2020-11-10',
+    'XBL':   '2002-11-15',  # Xbox Live
+
+    # Nintendo
+    'NES':   '1983-07-15',
+    'SNES':  '1990-11-21',
+    'N64':   '1996-06-23',
+    'GC':    '2001-09-14',
+    'Wii':   '2006-11-19',
+    'WiiU':  '2012-11-18',
+    'NS':    '2017-03-03',
+    'GB':    '1989-04-21',
+    'GBC':   '1998-10-21',
+    'GBA':   '2001-03-21',
+    'DS':    '2004-11-21',
+    '3DS':   '2011-02-26',
+    'VB':    '1995-07-21',  # Virtual Boy
+    'FDS':   '1986-02-21',  # Famicom Disk System
+
+    # Sega
+    'GEN':   '1988-10-29',  # Mega Drive / Genesis
+    'SAT':   '1994-11-22',  # Saturn
+    'DC':    '1998-11-27',  # Dreamcast
+    'SCD':   '1991-12-12',  # Sega CD
+    'S32X':  '1994-11-21',  # 32X
+    'GG':    '1990-10-06',  # Game Gear
+    'MS':    '1985-10-20',  # Master System
+
+    # Atari
+    '2600':  '1977-09-11',
+    '5200':  '1982-11-01',
+    '7800':  '1986-05-01',
+    'Lynx':  '1989-09-01',
+    'AST':   '1985-01-01',  # Atari ST
+
+    # NEC
+    'PCE':   '1987-10-30',  # PC Engine / TurboGrafx-16
+    'TG16':  '1989-08-29',  # TurboGrafx-16 (US)
+
+    # SNK
+    'NG':    '1990-04-26',  # Neo Geo
+    'NGage': '2003-10-07',  # N-Gage
+
+    # 3DO
+    '3DO':   '1993-10-04',
+
+    # Bandai
+    'WS':    '1999-03-04',  # WonderSwan
+    'WW':    '2000-12-09',  # WonderSwan Color
+
+    # PC / outros
+    'PC':    '1981-01-01',  # IBM PC
+    'OSX':   '2001-03-24',
+    'Linux': '1991-09-17',
+    'Mob':   '2000-01-01',  # Mobile genérico
+    'iOS':   '2008-07-10',
+    'And':   '2008-10-22',  # Android
+
+    # Philips
+    'CDi':   '1991-12-03',
+
+    # Commodore
+    'C64':   '1982-08-01',
+    'C128':  '1985-01-01',
+    'Amig':  '1985-07-23',  # Amiga
+    'CD32':  '1993-09-17',
+
+    # Sinclair / Amstrad
+    'ZXS':   '1982-04-23',  # ZX Spectrum
+    'ACPC':  '1984-06-01',  # Amstrad CPC
+
+    # Outras
+    'MSX':   '1983-06-16',
+    'MSX2':  '1985-01-01',  # se aparecer
+    'PCFX':  '1994-12-23',
+    'FMT':   '1989-01-01',  # FM Towns
+    'ApII':  '1977-06-05',  # Apple II
+    'BBCM':  '1981-12-01',  # BBC Micro
+    'CV':    '1982-08-01',  # ColecoVision
+    'Int':   '1979-01-01',  # Intellivision
+    'Arc':   '1987-06-24',  # Acorn Archimedes
+    'Aco':   '1987-06-24',  # Acorn
+    'iQue':  '2003-11-17',  # iQue Player
+    'DSiW':  '2008-11-01',  # DSiWare
+    'DSi':   '2008-11-01',
+    'VC':    '2006-11-19',  # Virtual Console (mesmo do Wii)
+    'WinP':  '2010-10-21',  # Windows Phone
+    'Ouya':  '2013-06-25',
+    'OR':    '2016-03-28',  # Oculus Rift
+    'GIZ':   '2013-04-01',  # GameStick
+    'MSD':   '1983-01-01',  # MSX genérico
+    'AJ':    '1990-01-01',  # desconhecido — deixei estimado
+    'BRW':   '1990-01-01',  # desconhecido — deixei estimado
+    'Series':'2020-11-10',  # Xbox Series X/S
+    'All':   None,          # ignorar
+    }
+    
+    df_platform_launch = (pd.DataFrame.from_dict(platform_launch, orient='index', columns=['release_date_console']).dropna())
+    df_platform_launch['release_date_console'] = pd.to_datetime(df_platform_launch['release_date_console'])
+
+    df1 = df1.merge(df_platform_launch, left_on='console', right_index=True, how='left')
     
     #2.Merge links (domain + url chart game)
     domain = "https://vgchartz.com"
