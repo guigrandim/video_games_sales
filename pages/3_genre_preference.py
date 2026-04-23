@@ -176,19 +176,23 @@ def sales_by_genre_heatmap(df1):
             pal_sales = ('pal_sales', 'sum'),
             other_sales = ('other_sales', 'sum')
         )
-        .reset_index()
         .round(2)
     )
-
-    heatmap_pivot = heatmap_data.set_index('genre')[['na_sales', 'jp_sales', 'pal_sales','other_sales']]
+    
+    heatmap_pivot = heatmap_data.T
+    
+    heatmap_norm = heatmap_pivot.div(heatmap_pivot.max(axis=1), axis=0)
     
     fig = px.imshow(
-        heatmap_pivot.T,
-        title = 'Preferencia de Genero por Região',
-        labels = dict(color='Vendas (Milhoes)'),
+        heatmap_norm,
+        zmin=0, zmax=1,
+        title = 'Preferencia de Genero por Região (Escala Relativa por Linha)',
+        labels = dict(color='Intensidade', x='Gênero', y='Região'),
         color_continuous_scale='RdYlGn',
         text_auto=True
     )
+    fig.update_traces(text=heatmap_pivot.values, texttemplate="%{text}")
+    fig.update_layout(height=600)
     
     return fig
 

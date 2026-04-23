@@ -173,16 +173,71 @@ def sales_plataform_generation(df1):
     plataform_consoles = df1.loc[(df1['plataform'] == 'Console') & (df1['console'] != 'All')]
     
     plataform_sum_sales_global_gen = (
-    plataform_consoles.groupby(['generation','console', 'manufacture'])['total_sales']
-    .sum()
-    .sort_values(ascending = False)
-    .reset_index(name='sales_per_generation')
+        plataform_consoles.groupby(['generation','console','manufacture'])['total_sales']
+        .sum()
+        .sort_values(ascending = False)
+        .reset_index(name='sales_per_generation')
+        .round(2)
+    )
+    
+    gen_sales = plataform_sum_sales_global_gen[(plataform_sum_sales_global_gen['generation'] != '9th Gen') & (plataform_sum_sales_global_gen['generation'] != 'Other/Unknown')]
+
+    all_gen_sales_individual = gen_sales.groupby('generation').first().reset_index()
+    
+    colors = {
+        'Sony': '#f1c40f',      # Amarelo/Ouro
+        'Nintendo': '#e74c3c',  # Vermelho
+        'Microsoft': '#f1948a', # Rosa/Salmon
+        'Sega': '#1abc9c',      # Verde Água
+        'Atari': '#3498db'      # Azul
+    }
+    
+    df_all_gen_sales_format = (
+        all_gen_sales_individual.style
+        .applymap(
+            lambda x: f'background-color: {colors.get(x, "")}; font-weight: bold;', 
+            subset=['manufacture']
+        )
+        .format({
+            'sales_per_generation': '{:.0f}'
+        })
+    )
+    
+    filter_all_gen_sales = gen_sales[gen_sales['sales_per_generation'] > 0.5].sort_values('generation', ascending = True).drop(columns=['console'])
+    
+    filter_all_gen_sales = filter_all_gen_sales.groupby(['generation','manufacture'])['sales_per_generation'].sum().reset_index()
+    
+    manufacturers = filter_all_gen_sales['manufacture'].unique()
+    gen_order = ['2nd Gen', '3rd Gen', '4th Gen', '5th Gen', '6th Gen', '7th Gen', '8th Gen']
+    
+    fig = go.Figure()
+    
+    for mfr in manufacturers:
+        df_mrf = filter_all_gen_sales[filter_all_gen_sales['manufacture'] == mfr]
+        fig.add_trace(go.Bar(
+            name=mfr,
+            y=df_mrf['generation'],
+            x=df_mrf['sales_per_generation'],
+            orientation = 'h',
+            marker_color=colors.get(mfr, '#95a5a6'),
+            insidetextanchor='middle',
+        ))
+    fig.update_layout(
+        barmode='stack',
+        title=dict(text='Vendas por Geração e Fabricante'),
+        xaxis=dict(title='Vendas (M)', tickformat=',.0f'),
+        yaxis=dict(
+            title='Geração',
+            categoryorder='array',
+            categoryarray=gen_order,
+            autorange='reversed',  
+        ),
+        legend=dict(title='Fabricante', orientation='v'),
+        height=450,
+        margin=dict(l=20, r=20, t=50, b=20),
     )
 
-    all_gen_sales = plataform_sum_sales_global_gen.groupby('generation').first().reset_index()
-    all_gen_sales = all_gen_sales[(all_gen_sales['generation'] != '9th Gen') & (all_gen_sales['generation'] != 'Other/Unknown')]
-    
-    return all_gen_sales
+    return df_all_gen_sales_format, fig
 
 def lifecycle_plataform(df1):
     
@@ -198,7 +253,7 @@ def lifecycle_plataform(df1):
         .reset_index()
     )
     
-    plataform_lifecycle = plataform_lifecycle[plataform_lifecycle['total_sales'] > 0.5] 
+    plataform_lifecycle = plataform_lifecycle[plataform_lifecycle['total_sales'] > 1] 
     
     plataform_lifecycle['start_date'] = pd.to_datetime(plataform_lifecycle['start_year'], format='%Y')
     plataform_lifecycle['end_date'] = pd.to_datetime(plataform_lifecycle['end_year'], format='%Y')
@@ -210,18 +265,59 @@ def lifecycle_plataform(df1):
         x_start='start_date',
         x_end = 'end_date',
         y = 'console',
-        title = 'Ciclo de Vida das Plataformas (Vendas até 2024 e Acima de 500 mil unidades)',
+        title = 'Ciclo de Vida das Plat. (Vendas até 2024 e Acima de 1 mi de uni)',
         color = 'manufacture',
     )
-    
     fig.update_yaxes(type='category')
-    
     fig.update_layout(
         yaxis=dict(categoryorder = 'array', categoryarray=plataform_lifecycle['console'].tolist()),
         showlegend=False
     )
     
     return fig
+
+def plataform_activity_years(df1):
+    
+    filter_total_sales = df1[(~df1['manufacture'].isin(['PC','Other/Unknown'])) & (df1['plataform'] == 'Console')].copy()
+    
+    activity_years_sales = (
+        filter_total_sales.groupby(['console', 'manufacture'])
+        .agg(
+            activity_year = ('activity_years', 'first'),
+            title_release = ('title', 'nunique')
+        )
+        .reset_index()
+    )
+
+    activity_years_sales['title_per_year'] = (activity_years_sales['title_release'] / activity_years_sales['activity_year']).round(0)
+    activity_years_sales = activity_years_sales.sort_values('activity_year', ascending = False)
+    
+    activity_years_sales = activity_years_sales[(activity_years_sales['title_per_year'] > 10)]
+    
+    colors = {
+        'Sony': '#f1c40f',      # Amarelo/Ouro
+        'Nintendo': '#e74c3c',  # Vermelho
+        'Microsoft': '#f1948a', # Rosa/Salmon
+        'Sega': '#1abc9c',      # Verde Água
+        'Atari': '#3498db',      # Azul
+        'SNK': "#3efdd7dd"      # Verde Água
+    }
+    
+    df_activity_years_sales_format = (
+        activity_years_sales.style
+        # Aplica cores de fundo na coluna manufacture
+        .applymap(
+            lambda x: f'background-color: {colors.get(x, "")}; font-weight: bold;', 
+            subset=['manufacture']
+        )
+        .format({
+            'activity_year': '{:.0f}',
+            'title_per_year': '{:.0f}'
+        })
+    )
+    
+    return df_activity_years_sales_format
+
 
 #===============================================
 # Select Directory - Load Files and Clean Dataset
@@ -242,14 +338,22 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 #Create a Header
 st.title ('Plataform & Hardware')
 
+#Call the Functions
+plataform_top, qtd_titles_p_80 = plataform_premium(df1)
+console_na, qtd_sales_na = best_plataform_na(df1)
+console_jp, qtd_sales_jp = best_plataform_jp(df1)
+console_pal, qtd_sales_pal = best_plataform_pal(df1)
+fig_mean_sales_global = global_sales_plataform(df1)
+fig_unique_titles_plataform = unique_title_plataform(df1)
+fig_genre_distinct = studios_per_plataform(df1)
+plataform_by_generation, fig_plataform_sum_gen = sales_plataform_generation(df1)
+lifecycle_plataforms_database = lifecycle_plataform(df1)
+df_plataform_cycles = plataform_activity_years(df1)
+
 #Create KPIs in Top the Page
 with st.container():
     col1, col2, col3, col4 = st.columns(4)
-    plataform_top, qtd_titles_p_80 = plataform_premium()
-    console_na, qtd_sales_na = best_plataform_na()
-    console_jp, qtd_sales_jp = best_plataform_jp()
-    console_pal, qtd_sales_pal = best_plataform_pal()
-
+    
     with col1:
         col1.metric('Console Premium\n(Jogos > 80 Critic Score)', plataform_top)
         
@@ -266,21 +370,26 @@ with st.container():
     col5, col6, col7 = st.columns(3)
         
     with col5:
-        fig_mean_sales_global = global_sales_plataform(df1)
         st.plotly_chart(fig_mean_sales_global, use_container_width = True)
     
     with col6:
-        fig_unique_titles_plataform = unique_title_plataform(df1)
         st.plotly_chart(fig_unique_titles_plataform, use_container_width = True)
     
     with col7:
-        fig_genre_distinct = studios_per_plataform(df1)
         st.plotly_chart(fig_genre_distinct, use_container_width = True)
 
 with st.container():
-    plataform_by_generation = sales_plataform_generation(df1)
-    st.dataframe(plataform_by_generation)
+    st.dataframe(plataform_by_generation, use_container_width = True, hide_index = True)
 
 with st.container():
-    lifecycle_plataforms_database = lifecycle_plataform(df1)
-    st.plotly_chart(lifecycle_plataforms_database, use_container_width = True)
+    st.plotly_chart(fig_plataform_sum_gen, use_container_width = True)
+
+with st.container():
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.plotly_chart(lifecycle_plataforms_database, use_container_width = True)
+    
+    with col2:
+        st.markdown("#### 🎮 Anos de Atividade e Lançamentos")
+        st.dataframe(df_plataform_cycles, use_container_width = True, hide_index = True)

@@ -146,6 +146,97 @@ def holdings_region_function(df1):
     
     return fig
 
+def total_sales_per_critic_titles(df1):
+
+    critic_score_clean = df1.dropna(subset=['critic_score'])
+    critic_score_clean = critic_score_clean[critic_score_clean['total_sales'] >=1]
+    
+    sales_global_per_title =(
+        critic_score_clean.groupby('title')
+        .agg(
+            title_unique = ('title', 'nunique'),
+            mean_critic_score = ('critic_score', 'mean'),
+            total_sales = ('total_sales', 'sum')  
+        )
+        .sort_values('total_sales', ascending = True)
+        .reset_index()
+        .round(2)
+    )
+    
+    fig = px.scatter(
+        sales_global_per_title,
+        x = 'mean_critic_score',
+        y = 'total_sales',
+        title = 'Relação do Total de Vendas pela Critica ',
+        labels = {
+            'mean_critic_score': 'Nota Média da Crítica',
+            'total_sales' : 'Vendas Totais (Milhões)'
+        },
+        color = 'mean_critic_score',
+        size = 'total_sales'
+    )
+    fig.update_layout(showlegend=False)
+    
+    return fig
+
+def first_hit_analysis(df1):
+    
+    df_hits = df_hits = df1[
+        (df1['total_sales'] >= 1) & 
+        (df1['release_date'].notna()) & 
+        (df1['release_date_console'].notna()) &
+        (df1['plataform'] == 'Console')
+    ].copy()
+    
+    df_hits['days_to_hit'] = (df_hits['release_date'] - df_hits['release_date_console']).dt.days
+    
+    df_hits = df_hits[df_hits['days_to_hit'] >= 0]
+    
+    df_first_hit = (
+        df_hits.loc[df_hits.groupby('console')['days_to_hit'].idxmin()]
+        [['console_name', 'title', 'days_to_hit', 'total_sales', 'manufacture']]
+        .sort_values('days_to_hit')
+        .reset_index(drop=True)
+    )
+    
+    colors = {
+        'Sony': '#f1c40f',      # Amarelo/Ouro
+        'Nintendo': '#e74c3c',  # Vermelho
+        'Microsoft': '#f1948a', # Rosa/Salmon
+        'Sega': '#1abc9c',      # Verde Água
+        'Atari': '#3498db',      # Azul
+        'SNK': "#3efdd7dd"      # Verde Água
+    }
+    
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x = df_first_hit['days_to_hit'],
+        y = df_first_hit['console_name'],
+        orientation = 'h',
+        marker_color=df_first_hit['manufacture'].map(colors).fillna('#95a5a6'),
+        customdata=df_first_hit[['title', 'total_sales', 'manufacture']],
+        hovertemplate=(
+            '<b>%{y}</b><br>'
+            'Primeiro Hit: %{customdata[0]}<br>'
+            'Dias até o Hit: %{x}<br>'
+            'Vendas: %{customdata[1]:.2f}M<br>'
+            'Fabricante: %{customdata[2]}'
+            '<extra></extra>'
+        ),
+    ))
+    fig.update_layout(
+        title=dict(text='Tempo até o Primeiro Hit por Console'),
+        xaxis=dict(title='Dias após lançamento do console'),
+        yaxis=dict(
+            title='Console',
+            autorange='reversed',
+        ),
+        height=600,
+        margin=dict(l=20, r=20, t=50, b=20),
+    )
+    
+    return fig
+
 #-------------------------------------------- Beginning of the logical structure code --------------------- #
 
 #===============================================
@@ -169,6 +260,17 @@ st.title ('Sales & Volume')
 
 #Bulletpoins in Page
 
+#Functions Apply
+fig_sales_market_share, df_sales_global = market_share_per_region(df1)
+fig_sales_games_per_year = sales_game_per_year(df1)
+fig_sales_titles_per_critic = total_sales_per_critic_titles(df1)
+fig_release_games = release_region_games(df1)
+fig_critic_score_premium = critic_score_premium_region(df1)
+fig_genre_region_release = holdings_region_function(df1)
+fig_release_games_per_year = release_game_per_year(df1)
+fig_first_hit_consoles = first_hit_analysis(df1)
+
+
 #Create a Tabs in Page
 
 tab1, tab2 = st.tabs(["Visão Geral Vendas", "Visão Geral Lançamentos"])
@@ -178,7 +280,6 @@ width_default = 350
 with tab1:
     with st.container():
         col1, col2 = st.columns([3, 2])
-        fig_sales_market_share, df_sales_global = market_share_per_region(df1)
         
         with col1:
             st.plotly_chart(fig_sales_market_share, use_container_width=True)
@@ -188,26 +289,27 @@ with tab1:
             st.dataframe(df_sales_global, use_container_width = True, hide_index = True)
 
     with st.container():
-        fig_sales_games_per_year = sales_game_per_year(df1)
         st.plotly_chart(fig_sales_games_per_year, use_container_width=True)
+    
+    with st.container():
+        st.plotly_chart(fig_sales_titles_per_critic, use_container_width = True)
+    
+    with st.container():
+        st.plotly_chart(fig_first_hit_consoles, use_container_width = True)
 
 #Tab2 - Release Tab
 with tab2:
     with st.container():
         col5, col6, col7 = st.columns(3)
     
-        with col5:
-                fig_release_games = release_region_games(df1)
+        with col5:  
                 st.plotly_chart(fig_release_games, use_container_width=True)
     
         with col6:
-                fig_critic_score_premium = critic_score_premium_region(df1)
                 st.plotly_chart(fig_critic_score_premium, use_container_width=True)
         
         with col7:
-                fig_genre_region_release = holdings_region_function(df1)
                 st.plotly_chart(fig_genre_region_release, use_container_width=True)
     
     with st.container():
-        fig_release_games_per_year = release_game_per_year(df1)
         st.plotly_chart(fig_release_games_per_year, use_container_width=True)
