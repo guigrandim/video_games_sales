@@ -67,7 +67,7 @@ def dataset_clean():
     'FMT': 'Fujitsu', 'Aco': 'Acorn', 'BBCM': 'Acorn', 'GIZ': 'Tiger', 'Ouya': 'Ouya',
     'Arc': 'Arcade', 'Mob': 'Mobile', 'And': 'Mobile', 'iOS': 'Mobile', 'BRW': 'Web',
     'OR': 'Oculus/Meta', 'NG': 'SNK', 'NEO': 'SNK', 'NGP': 'SNK'
-}
+    }
 
     df1['manufacture'] = df['console'].map(manufacture).fillna('Other/Unknown')
     
@@ -269,21 +269,14 @@ def dataset_clean():
     #3. Format date
     df1['release_date'] = pd.to_datetime(df['release_date'])
     
-    #4.Verification the space before or after the sentence
-    for col in df1.select_dtypes(include='object').columns:
-        try:
-            df1[col] = df1[col].str.strip()
-        except AttributeError:
-            pass
-    
-    #6.Insert qualify column into dataset
+    #4.Insert qualify column into dataset
     df1['classification'] = pd.cut(
         df1['critic_score'],
         bins=[-float('inf'), 5.0, 7.0, 9.0, float('inf')],
         labels=['Bad', 'Regular', 'Good', 'Premium']
     ).cat.add_categories('Unrated').fillna('Unrated')
     
-    #7. Merge Country and Corret Names -> Dataset_Limpeza.csv
+    #5. Merge Country and Corret Names -> Dataset_Limpeza.csv
 
     map_country_studios = df_catch_pubs_devs.set_index('original_term')['studio_location']
     map_dev_pub = df_catch_pubs_devs.set_index('original_term')['clean_name']
@@ -297,13 +290,28 @@ def dataset_clean():
     df1['clean_name_developer'] = df1['developer'].map(map_dev_pub)
     df1['holdings_developer'] = df1['publisher'].map(map_holdings)
     
-    #8.Holdings Country
+    #6.Holdings Country
     df_map_holdings = df_catch_pubs_devs.drop_duplicates(subset='holding', keep='first')
     map_country_holdings = df_map_holdings.set_index('holding')['country_origin']
     
     df1['holdings_publisher_country'] = df1['holdings_publisher'].map(map_country_holdings)
     
-    #9.Drop img column
+    #7.Drop img column
     df1 = df1.drop('img', axis = 1)
+    
+    #8. Clean Final Dataset
+
+    colunas_title_case = ['title', 'manufacture']
+
+    for col in df1.select_dtypes(include='object').columns:
+        try:
+            df1[col] = (df1[col]
+                .str.strip()
+                .str.replace(r'\s+', ' ', regex=True)
+                .str.replace(r'[^\w\s\-\:\.\!\?\&\'\,]', '', regex=True)
+                .str.normalize('NFC')
+            )
+        except AttributeError:
+            pass
     
     return df1
