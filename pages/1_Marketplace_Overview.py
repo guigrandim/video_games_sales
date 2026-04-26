@@ -36,9 +36,8 @@ def total_sales_and_titles(df1):
     Calcula métricas gerais de volume do dataset.
 
     Retorna o total de vendas globais, a contagem total de registros
-    e a quantidade de títulos únicos — usados tipicamente em st.metric
-    para dar contexto ao usuário antes das análises detalhadas.
-
+    e a quantidade de títulos únicos para contextualizar o dataset
+    
     Responde às perguntas:
     "Qual o volume total de vendas do mercado analisado?"
     "Quantos jogos únicos existem no dataset?"
@@ -168,7 +167,7 @@ def region_premium_title(df1):
     Responde às perguntas:
     "Qual região consome mais jogos considerados Premium?"
     "Como se distribuem as vendas de títulos premium entre as regiões?"
-    "Existe alguma região com apetite desproporcional por jogos de alta qualidade?"
+    "Existe alguma região consumindo mais jogos Premium?"
 
     Parâmetros
     ----------
@@ -480,6 +479,7 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('🏠 Home - Marketplace Overview')
+st.markdown(""" Métricas mostrando o tamanho do mercado e o comportamento geral de vendas """)
 
 #Call the Functions
 kpi_total_sales_global, kpi_total_title_dataset, kpi_unique_titles = total_sales_and_titles(df1)                        # <- Função 1: Total de Vendas e Contagem de Titulos
