@@ -182,140 +182,125 @@ def quality_score(df1):
     """
 
     # ── 1. Limpeza e extração do ano ──────────────────────────────────────────
-    clean_df = (
-        df1.dropna(subset=['critic_score', 'release_date'])
-        .copy()
-    )
-    clean_df['release_year'] = pd.to_datetime(
-        clean_df['release_date'], errors='coerce'
-    ).dt.year
+    clean_df = df1.dropna(subset=['critic_score', 'release_date']).copy()
+    if clean_df.empty:
+        return _empty_fig("Dados insuficientes (poucos jogos com nota)")
 
-    # ── 2. Média, desvio e contagem por ano ───────────────────────────────────
-    quality_score_per_year = (
-        clean_df.groupby('release_year')['critic_score']
-        .agg(
-            mean_cs  = 'mean',
-            std_cs   = 'std',
-            count_cs = 'count',
-        )
-        .reset_index()
-    )
+    clean_df['release_year'] = pd.to_datetime(clean_df['release_date'], errors='coerce').dt.year
 
-    # Filtra anos com amostra mínima para IC confiável
-    quality_score_per_year = quality_score_per_year[quality_score_per_year['count_cs'] >= 4]
+    # ── 2. Agregação por ano (média, desvio, contagem) ────────────────────────
+    yearly = (clean_df.groupby('release_year')['critic_score']
+              .agg(mean='mean', std='std', count='count')
+              .reset_index())
+    yearly = yearly[yearly['count'] >= 15]          # mínimo de 15 jogos por ano
+
+    if yearly.empty:
+        return _empty_fig("Não há anos com pelo menos 15 jogos avaliados")
 
     # ── 3. Intervalo de confiança 95% ─────────────────────────────────────────
     z = 1.96
-    quality_score_per_year['ci']    = z * (quality_score_per_year['std_cs'] / quality_score_per_year['count_cs'] ** 0.5)
-    quality_score_per_year['upper'] = (quality_score_per_year['mean_cs'] + quality_score_per_year['ci']).round(2)
-    quality_score_per_year['lower'] = (quality_score_per_year['mean_cs'] - quality_score_per_year['ci']).round(2)
-    quality_score_per_year['mean_cs'] = quality_score_per_year['mean_cs'].round(2)
+    yearly['ci'] = z * yearly['std'] / yearly['count'] ** 0.5
+    yearly['upper'] = (yearly['mean'] + yearly['ci']).round(2)
+    yearly['lower'] = (yearly['mean'] - yearly['ci']).round(2)
+    yearly['mean'] = yearly['mean'].round(2)
 
-    # ── 4. Geração dominante por ano (para faixas de fundo) ───────────────────
-    GEN_ORDER = ['2nd Gen','3rd Gen','4th Gen','5th Gen','6th Gen','7th Gen','8th Gen','9th Gen']
+    # ── 4. Geração: anos de início fixos (base histórica) ────────────────────
+    GEN_ORDER = ['2nd Gen', '3rd Gen', '4th Gen', '5th Gen', '6th Gen', '7th Gen', '8th Gen', '9th Gen']
+    GEN_START = {
+        '2nd Gen': 1976, '3rd Gen': 1983, '4th Gen': 1988, '5th Gen': 1993,
+        '6th Gen': 1998, '7th Gen': 2005, '8th Gen': 2012, '9th Gen': 2020
+    }
     GEN_COLORS = {
-        '2nd Gen': 'rgba(139,   0, 139, 0.08)',
-        '3rd Gen': 'rgba(230,  57,  70, 0.08)',
-        '4th Gen': 'rgba(255, 152,   0, 0.08)',
-        '5th Gen': 'rgba(255, 235,  59, 0.08)',
-        '6th Gen': 'rgba( 76, 175,  80, 0.08)',
-        '7th Gen': 'rgba( 33, 150, 243, 0.08)',
-        '8th Gen': 'rgba(  0, 188, 212, 0.08)',
-        '9th Gen': 'rgba(156,  39, 176, 0.08)',
+        '2nd Gen': 'rgba(139,   0, 139, 0.15)',
+        '3rd Gen': 'rgba(230,  57,  70, 0.15)',
+        '4th Gen': 'rgba(255, 152,   0, 0.15)',
+        '5th Gen': 'rgba(255, 235,  59, 0.15)',
+        '6th Gen': 'rgba( 76, 175,  80, 0.15)',
+        '7th Gen': 'rgba( 33, 150, 243, 0.15)',
+        '8th Gen': 'rgba(  0, 188, 212, 0.15)',
+        '9th Gen': 'rgba(156,  39, 176, 0.15)',
     }
 
-    # Ano de início de cada geração
-    gen_years = (
-        df1[df1['generation'].isin(GEN_ORDER)]
-        .groupby('generation')['release_date']
-        .min()
-        .apply(lambda x: pd.to_datetime(x, errors='coerce').year)
-        .reindex(GEN_ORDER)
-        .dropna()
-        .astype(int)
-        .reset_index()
-    )
-    gen_years.columns = ['generation', 'start_year']
+    # ── 5. Filtrar gerações que efetivamente possuem dados ────────────────────
+    min_year, max_year = yearly['release_year'].min(), yearly['release_year'].max()
+    valid_gen = []
+    for i, gen in enumerate(GEN_ORDER):
+        start = GEN_START[gen]
+        end = GEN_START[GEN_ORDER[i+1]] if i+1 < len(GEN_ORDER) else max_year + 1
+        if any((yearly['release_year'] >= start) & (yearly['release_year'] < end)):
+            valid_gen.append((gen, max(start, min_year)))
 
-    # ── 5. Figura ─────────────────────────────────────────────────────────────
+    if not valid_gen:
+        return _empty_fig("Nenhuma geração com dados suficientes")
+
+    # ── 6. Construção da figura ──────────────────────────────────────────────
     fig = go.Figure()
 
-    # Faixas de fundo por geração
-    for i, row in gen_years.iterrows():
-        gen   = row['generation']
-        x0    = row['start_year']
-        x1    = gen_years.iloc[i + 1]['start_year'] if i + 1 < len(gen_years) else quality_score_per_year['release_year'].max()
-        color = GEN_COLORS.get(gen, 'rgba(128,128,128,0.05)')
-
-        fig.add_vrect(
-            x0=x0, x1=x1,
-            fillcolor=color,
-            line_width=0,
-            annotation_text=gen,
-            annotation_position='top left',
-            annotation_font=dict(size=9, color='rgba(255,255,255,0.5)'),
+    # Faixas de fundo e anotações das gerações (apenas as válidas)
+    for i, (gen, x0) in enumerate(valid_gen):
+        x1 = valid_gen[i+1][1] if i+1 < len(valid_gen) else max_year
+        if x1 > x0:
+            fig.add_vrect(
+                x0=x0, x1=x1,
+                fillcolor=GEN_COLORS[gen],
+                line_width=1,
+                line_color='rgba(255,255,255,0.2)',
+            )
+        # Anotação centralizada
+        x_center = (x0 + x1) / 2 if i+1 < len(valid_gen) else x0
+        fig.add_annotation(
+            x=x_center, y=1.02, xref='x', yref='paper',
+            text=gen, showarrow=False,
+            font=dict(size=10, color='white', weight='bold'),
+            bgcolor='rgba(0,0,0,0.6)', borderpad=2, borderwidth=1,
         )
 
     # Faixa do intervalo de confiança
     fig.add_trace(go.Scatter(
-        x=pd.concat([quality_score_per_year['release_year'], quality_score_per_year['release_year'][::-1]]),
-        y=pd.concat([quality_score_per_year['upper'], quality_score_per_year['lower'][::-1]]),
-        fill='toself',
-        fillcolor='rgba(99, 179, 237, 0.15)',
-        line=dict(color='rgba(255,255,255,0)'),
-        name='IC 95%',
-        hoverinfo='skip',
+        x=pd.concat([yearly['release_year'], yearly['release_year'][::-1]]),
+        y=pd.concat([yearly['upper'], yearly['lower'][::-1]]),
+        fill='toself', fillcolor='rgba(99, 179, 237, 0.15)',
+        line=dict(color='rgba(255,255,255,0)'), name='IC 95%', hoverinfo='skip'
     ))
 
-    # Linha da média
+    # Linha da média anual
     fig.add_trace(go.Scatter(
-        x=quality_score_per_year['release_year'],
-        y=quality_score_per_year['mean_cs'],
-        mode='lines+markers',
-        line=dict(color='#63B3ED', width=2.5),
+        x=yearly['release_year'], y=yearly['mean'],
+        mode='lines+markers', line=dict(color='#63B3ED', width=2.5),
         marker=dict(size=5, color='#63B3ED', line=dict(width=1, color='white')),
         name='Média Critic Score',
-        customdata=quality_score_per_year[['upper', 'lower', 'count_cs']],
+        customdata=yearly[['upper', 'lower', 'count']],
         hovertemplate=(
             '<b>%{x}</b><br>'
             'Média: %{y:.2f}<br>'
             'IC 95%: [%{customdata[1]:.2f} — %{customdata[0]:.2f}]<br>'
             'Jogos avaliados: %{customdata[2]}'
             '<extra></extra>'
-        ),
+        )
     ))
 
     # Linha de média global
-    global_avg = clean_df['critic_score'].mean().round(2)
+    global_avg = round(clean_df['critic_score'].mean(), 2)
     fig.add_hline(
-        y=global_avg,
-        line=dict(color='rgba(255,255,255,0.3)', width=1, dash='dash'),
+        y=global_avg, line=dict(color='white', width=1, dash='dash'),
         annotation_text=f'Média global: {global_avg}',
-        annotation_font=dict(size=10, color='rgba(255,255,255,0.5)'),
-        annotation_xanchor='left',
+        annotation_font=dict(size=10, color='white'), annotation_xanchor='right'
     )
 
+    # Layout final
     fig.update_layout(
         title=dict(
             text='Evolução do Critic Score ao Longo do Tempo<br>'
-                 '<sup>Linha = média anual | Faixa = intervalo de confiança 95% | Fundo = geração de console</sup>',
-            font=dict(size=18),
-            x=0.01,
+                 '<sup>Linha = média anual | Faixa = IC 95% | Fundo = geração</sup>',
+            font=dict(size=18), x=0.01
         ),
-        xaxis=dict(title='Ano', dtick=2, showgrid=False),
-        yaxis=dict(
-            title='Critic Score Médio',
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.06)',
-        ),
+        xaxis=dict(title='Ano', dtick=2, showgrid=False, range=[min_year-1, max_year+1]),
+        yaxis=dict(title='Critic Score Médio', showgrid=True, gridcolor='rgba(0,0,0,0.06)'),
         hovermode='x unified',
-        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='left', x=0),
-        height=480,
-        margin=dict(t=90, l=10, r=20, b=50),
-        plot_bgcolor='rgba(0,0,0,0)',
-        paper_bgcolor='rgba(0,0,0,0)',
+        legend=dict(orientation='h', yanchor='bottom', y=-0.25, xanchor='left'),
+        height=480, margin=dict(t=90, l=10, r=20, b=50),
+        plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)'
     )
-
     return fig
 
 #Função 3 - Market Share por Fabricante
@@ -439,7 +424,7 @@ def market_share_per_manufacture(df1):
         legend=dict(
             orientation='h',
             yanchor='bottom',
-            y=1.02,
+            y=-0.25,
             xanchor='left',
             x=0,
         ),
@@ -451,7 +436,7 @@ def market_share_per_manufacture(df1):
 
     return fig
 
-#Função 4 - Timeline Peak Generation - Pico de Vendas por Geração
+#Função 4 - Pico de Vendas por Geração
 def timeline_peak_generation(df1):
     """
     Gera um gráfico de Gantt horizontal com o ciclo de vida de cada geração
@@ -601,7 +586,7 @@ def timeline_peak_generation(df1):
         legend=dict(
             orientation='h',
             yanchor='bottom',
-            y=1.02,
+            y=-0.25,
             xanchor='left',
             x=0,
         ),
@@ -615,49 +600,73 @@ def timeline_peak_generation(df1):
 
 #Função 5 - Coexistencia de Geração - Vendas por Geração
 def timeline_coexistencia_geracao(df1):
+    """
+    Gera um gráfico de linhas com o volume de vendas por geração ao longo
+    dos anos, destacando os períodos de coexistência entre gerações consecutivas.
 
-    df = df1[df1['generation'] != 'OtherUnknown'].copy()
-    df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
-    df['release_year'] = df['release_date'].dt.year
+    Responde às perguntas:
+    "Por quanto tempo duas gerações coexistiram no mercado?"
+    "Como as transições entre gerações impactaram o volume de vendas?"
+    "Qual geração manteve relevância comercial por mais tempo após o lançamento da próxima?"
 
-    ordem_geracao = ['2nd Gen', '3rd Gen', '4th Gen', '5th Gen', '6th Gen', '7th Gen', '8th Gen', '9th Gen']
+    Parâmetros
+    ----------
+    df1 : pd.DataFrame
+        DataFrame video_game_sales.csv com dataset_clean() aplicado.
 
-    # Vendas por geração e ano
+    Retorna
+    -------
+    fig : plotly.graph_objects.Figure
+        Gráfico de linhas por geração com áreas de coexistência destacadas.
+    """
+
+    # ── 1. Limpeza e extração do ano ──────────────────────────────────────────
+    df_clean = df1[df1['generation'] != 'OtherUnknown'].copy()
+    df_clean['release_date'] = pd.to_datetime(df_clean['release_date'], errors='coerce')
+    df_clean['release_year'] = df_clean['release_date'].dt.year
+
+    # ── 2. Ordem cronológica das gerações ─────────────────────────────────────
+    ordem_geracao = ['2nd Gen','3rd Gen','4th Gen','5th Gen','6th Gen','7th Gen','8th Gen','9th Gen']
+
+    # ── 3. Paleta por geração ─────────────────────────────────────────────────
+    GEN_COLORS = {
+        '2nd Gen': '#8B008B',
+        '3rd Gen': '#E63946',
+        '4th Gen': '#FF9800',
+        '5th Gen': '#FFEB3B',
+        '6th Gen': '#4CAF50',
+        '7th Gen': '#2196F3',
+        '8th Gen': '#00BCD4',
+        '9th Gen': '#9C27B0',
+    }
+
+    # ── 4. Vendas por geração e ano ───────────────────────────────────────────
     vendas_ano = (
-        df[df['total_sales'] > 0]
+        df_clean[df_clean['total_sales'] > 0]
         .groupby(['generation', 'release_year'])['total_sales']
         .sum()
         .reset_index()
     )
 
-    # Ciclo de vida
+    # ── 5. Ciclo de vida por geração ──────────────────────────────────────────
     lifecycle = (
-        df.groupby('generation')
-        .agg(start_year=('start_year', 'min'), end_year=('end_year', 'max'))
+        df_clean.groupby('generation')
+        .agg(
+            start_year = ('start_year', 'min'),
+            end_year   = ('end_year',   'max'),
+        )
         .reset_index()
     )
 
-    fig = go.Figure()
-
-    # Linha de vendas por geração ao longo do tempo
-    for gen in ordem_geracao:
-        df_gen = vendas_ano[vendas_ano['generation'] == gen]
-        if df_gen.empty:
-            continue
-
-        fig.add_trace(go.Scatter(
-            x=df_gen['release_year'],
-            y=df_gen['total_sales'],
-            name=gen,
-            mode='lines+markers',
-            line=dict(width=2),
-            hovertemplate=f'<b>{gen}</b><br>Ano: %{{x}}<br>Vendas: %{{y:.1f}}M<extra></extra>'
-        ))
-
-    # Área de coexistência entre gerações consecutivas
-    lifecycle['generation'] = pd.Categorical(lifecycle['generation'], categories=ordem_geracao, ordered=True)
+    lifecycle['generation'] = pd.Categorical(
+        lifecycle['generation'], categories=ordem_geracao, ordered=True
+    )
     lifecycle = lifecycle.sort_values('generation').reset_index(drop=True)
 
+    # ── 6. Figura ─────────────────────────────────────────────────────────────
+    fig = go.Figure()
+
+    # ── 7. Áreas de coexistência entre gerações consecutivas ──────────────────
     for i in range(len(lifecycle) - 1):
         gen_atual   = lifecycle.iloc[i]
         gen_proxima = lifecycle.iloc[i + 1]
@@ -668,39 +677,99 @@ def timeline_coexistencia_geracao(df1):
             fig.add_vrect(
                 x0=overlap_start,
                 x1=overlap_end,
-                fillcolor='rgba(252, 129, 129, 0.12)',
+                fillcolor='rgba(252, 129, 129, 0.10)',
                 line_width=0,
             )
             for x_pos in [overlap_start, overlap_end]:
                 fig.add_vline(
                     x=x_pos,
-                    line=dict(color='#FC8181', width=1, dash='dot')
+                    line=dict(color='rgba(252,129,129,0.4)', width=1, dash='dot'),
                 )
-            # Anotação de transição
             fig.add_annotation(
                 x=(overlap_start + overlap_end) / 2,
                 y=1,
                 yref='paper',
-                text=f'↕ {gen_atual["generation"]}<br>→ {gen_proxima["generation"]}',
+                text=(
+                    f'↕ {gen_atual["generation"]}<br>'
+                    f'→ {gen_proxima["generation"]}<br>'
+                    f'{int(overlap_end - overlap_start)}a'
+                ),
                 showarrow=False,
                 font=dict(size=8, color='#FC8181'),
                 bgcolor='rgba(0,0,0,0.4)',
                 borderpad=3,
-                yanchor='top'
+                yanchor='top',
             )
 
+    # ── 8. Linhas de vendas por geração ───────────────────────────────────────
+    for gen in ordem_geracao:
+        df_gen = vendas_ano[vendas_ano['generation'] == gen]
+        if df_gen.empty:
+            continue
+
+        color = GEN_COLORS.get(gen, '#888888')
+
+        fig.add_trace(go.Scatter(
+            x=df_gen['release_year'],
+            y=df_gen['total_sales'],
+            name=gen,
+            mode='lines+markers',
+            line=dict(color=color, width=2.5),
+            marker=dict(size=5, color=color, line=dict(width=1, color='white')),
+            hovertemplate=(
+                f'<b>{gen}</b><br>'
+                'Ano: %{x}<br>'
+                'Vendas: %{y:.1f}M'
+                '<extra></extra>'
+            ),
+        ))
+
     fig.update_layout(
-        title='Coexistência de Gerações e Impacto da Transição no Volume de Vendas',
-        xaxis_title='Ano',
-        yaxis_title='Total de Vendas (M)',
-        xaxis=dict(dtick=5, tickangle=45),
+        title=dict(
+            text='Coexistência de Gerações — Impacto das Transições no Volume de Vendas<br>'
+                 '<sup>Faixas rosas = períodos de coexistência entre gerações consecutivas</sup>',
+            font=dict(size=18),
+            x=0.01,
+        ),
+        xaxis=dict(
+            title='Ano',
+            dtick=5,
+            tickangle=45,
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.06)',
+        ),
+        yaxis=dict(
+            title='Total de Vendas (M)',
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.06)',
+        ),
         hovermode='x unified',
+        legend=dict(
+            orientation='h',
+            yanchor='bottom',
+            y=-0.30,
+            xanchor='left',
+            x=0,
+        ),
         height=500,
-        legend=dict(orientation='h', y=-0.2)
+        margin=dict(t=90, l=10, r=20, b=60),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
     )
 
     return fig
-    
+
+#Função Auxiliar - Retorna Figura Vazia - Erro quando não tenho dados  
+def _empty_fig(msg):
+    """Retorna figura vazia com mensagem de aviso."""
+    fig = go.Figure()
+    fig.add_annotation(
+        text=msg, xref="paper", yref="paper", x=0.5, y=0.5,
+        showarrow=False, font=dict(size=14, color="gray")
+    )
+    fig.update_layout(height=480)
+    return fig
+
 #===============================================
 # Select Directory - Load Files and Clean Dataset
 #===============================================
@@ -719,6 +788,7 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('⏳ Evolução das Gerações - Ciclos de Mercado')
+st.markdown(""" Métricas apresentando o comportamento e a qualidade das vendas das empresas na indústria de forma temporal """)
 
 #Call the Functions
 fig_sales_per_year, fig_release_per_year = games_per_year(df1)  # <- Função 1 - Ciclo de Vendas e Lançamentos Geracional
