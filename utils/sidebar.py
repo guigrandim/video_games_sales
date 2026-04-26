@@ -3,6 +3,7 @@ import os
 import pandas as pd
 from datetime import date
 from utils.data_loader import dataset_clean
+from pathlib import Path
 
 def render_sidebar():
     #Load Dataset Principal and Libray Publishers and Developers
@@ -10,6 +11,9 @@ def render_sidebar():
     df1 = df.copy()
     
     #1. Load Logo Page
+    base_dir = Path(__file__).parents[1]
+    imagem_path1 = base_dir / "assets" / "img" / "logo1.png"
+    imagem_path2 = base_dir / "assets" / "img" / "logo2.png"
 
     #2. Configuration Filters
     #2.1 - Genre
@@ -33,7 +37,12 @@ def render_sidebar():
 
     #3. Create a Sidebar
     with st.sidebar:
-        st.title('BrasCo - Gaming Ltd.')
+        #Plot Logo BrasCo.
+        if imagem_path1.exists():
+            st.image(str(imagem_path1))
+        else:
+            st.warning("Imagem não encontrada")
+        
         st.divider()
     
         filter_generation = st.sidebar.selectbox("Selecione a Geração", options=generation, index=0)
@@ -54,8 +63,17 @@ def render_sidebar():
             filter_console = filter_console if filter_console else console.tolist()
             
         st.divider()
+        
+        #Plot Logo BrasCo.
+        if imagem_path2.exists():
+            st.image(str(imagem_path2), width=250)
+        else:
+            st.warning("Imagem não encontrada")
     
-        st.markdown('#### Powered by GG Solution \nOwner: Guilherme Grandim')
+        st.markdown(
+    "<p style='text-align: center;'>Owner: Guilherme Grandim </p>",
+    unsafe_allow_html=True
+)
     
     df1 = df1[df1['genre'].isin(filter_genero)]
     df1 = df1[df1['console'].isin(filter_console)]
