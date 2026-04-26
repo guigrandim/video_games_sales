@@ -3,12 +3,13 @@ import os
 import datetime
 import re
 import streamlit as st
+from pathlib import Path
 
 @st.cache_data
 def dataset_clean():
     #Select Directory Dataset
-    base_dir = os.path.dirname(__file__)
-    dataset_dir = os.path.join(base_dir,'..', 'dataset')
+    base_dir = Path(__file__).parent
+    dataset_dir = base_dir / '..' / 'assets' / 'data'
     
     #Load Dataset Principal and Libray Publishers and Developers
     df = pd.read_csv(os.path.join(dataset_dir, 'video_game_sales.csv'))
