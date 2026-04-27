@@ -826,7 +826,8 @@ def quality_holdings_devs(df1):
         df_clean.groupby('holdings_developer', as_index=False)
         .agg(
             avg_critic    = ('critic_score', 'mean'),
-            unique_titles = ('title', 'nunique')   # jogos distintos avaliados
+            unique_titles = ('title', 'nunique'),
+            total_sales = ('total_sales', 'sum')
         )
     )
 
@@ -866,7 +867,7 @@ def quality_holdings_devs(df1):
             showscale=False,
         ),
         cliponaxis=False,
-        text=quality['avg_critic'].apply(lambda v: f'{v:.2f}'),
+        text=quality.apply(lambda r: f"{r['avg_critic']:.2f} ({r['total_sales']:.0f}M)", axis=1),
         textposition='outside',
         customdata=quality[['unique_titles']],
         hovertemplate=(
@@ -930,7 +931,7 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('🏢 Holdings e Geopolítica - Competitive Intelligence')
-st.markdown(""" Métricas relacionadas ao comportamento da industria no desenvolvimento e publicação de jogos de forma temporal """)
+st.markdown("""- Métricas relacionadas ao comportamento da industria no desenvolvimento e publicação de jogos de forma temporal """)
 
 #Call the Functions
 fig_holdings_sales_concentration = market_concentration(df1)                        # <- Função 1 - Concentração de Mercado

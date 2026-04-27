@@ -58,10 +58,11 @@ holdings_colors = {
 def correlation_beteween_score_sales(df1):
     """
     Gera um gráfico de dispersão com linha de tendência entre a nota da crítica (critic_score)
-    e o total de vendas (total_sales), utilizando regressão linear para destacar a correlação.
+    e o total de vendas (total_sales), utilizando regressão linear para destacar a correlação,
+    e destacar qual o ponto onde as vendas aumentam.
 
     Agrupa as vendas totais por nota da crítica (soma), mantendo apenas jogos com vendas
-    positivas e avaliação válida.
+    positivas e avaliação válida e um minimo de titulos lançados
 
     Responde à pergunta:
     "Existe uma relação positiva entre a nota da crítica e o sucesso comercial dos jogos?"
@@ -78,8 +79,15 @@ def correlation_beteween_score_sales(df1):
         e linha de tendência (regressão linear) exibindo a equação da reta.
     """
     # ── 1. Limpeza dos dados ──────────────────────────────────────────
-    df_clean_score_sales = df1.loc[df1['total_sales'] > 0].dropna(subset=['critic_score'])
-    
+    df_clean_score_sales = (
+        df1.loc[df1['total_sales'] >= 0.5]
+           .dropna(subset=['critic_score'])
+    )
+
+    # Remove outliers de vendas (top 5%)
+    p95 = df_clean_score_sales['total_sales'].quantile(0.95)
+    df_clean_score_sales = df_clean_score_sales[df_clean_score_sales['total_sales'] <= p95]
+
     # Verifica se há dados suficientes
     if df_clean_score_sales.empty or len(df_clean_score_sales) < 2:
         fig = go.Figure()
@@ -90,45 +98,155 @@ def correlation_beteween_score_sales(df1):
         )
         fig.update_layout(height=500)
         return fig
-    
-    # ── 2. Agrupamento dos Dados ──────────────────────────────────────────
+
+    # ── 2. Agrupamento dos Dados ──────────────────────────────────────
     clean_score_sales = (
-        df_clean_score_sales.groupby('critic_score')['total_sales']
-        .sum()
+        df_clean_score_sales.groupby('critic_score')
+        .agg(
+            total_sales  = ('total_sales', 'sum'),
+            total_titles = ('title', 'nunique'),
+        )
         .reset_index()
     )
     
+    # Remove notas com menos de 10 títulos — amostra pequena distorce a soma
+    clean_score_sales = clean_score_sales[clean_score_sales['total_titles'] >= 15]
+    
+    # Verifica se ainda há dados após o filtro
+    if len(clean_score_sales) < 2:
+        fig = go.Figure()
+        fig.add_annotation(
+            text="Dados insuficientes após filtro de mínimo de títulos por nota",
+            xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False,
+            font=dict(size=14, color="gray")
+        )
+        fig.update_layout(height=500)
+        return fig
+
     x = clean_score_sales['critic_score'].values
     y = clean_score_sales['total_sales'].values
 
-    # ── 3. Regressão linear com numpy ────────────────────────────────
-    m, b = np.polyfit(x, y, 1)
+    # ── 3. Regressão linear — apenas intervalo central (5%–95%) ──────
+    q05 = np.quantile(x, 0.05)
+    q95 = np.quantile(x, 0.95)
+    mask = (x >= q05) & (x <= q95)
+    m, b = np.polyfit(x[mask], y[mask], 1)
+
     x_line = np.linspace(x.min(), x.max(), 100)
     y_line = m * x_line + b
+    
+    # ── 3.1 Benchmark automático — ponto de maior salto de vendas ────
+    clean_score_sales = clean_score_sales.sort_values('critic_score')
 
-    # ── 4. Gráfico ───────────────────────────────────────────────────
+    # Variação % de vendas entre notas consecutivas
+    clean_score_sales['sales_pct_change'] = (
+        clean_score_sales['total_sales'].pct_change() * 100
+    )
+
+    # Nota com maior salto positivo = ponto de inflexão
+    idx_inflexao  = clean_score_sales['sales_pct_change'].idxmax()
+    benchmark     = clean_score_sales.loc[idx_inflexao, 'critic_score']
+
+    # Médias de vendas abaixo e acima do benchmark
+    abaixo = clean_score_sales[clean_score_sales['critic_score'] <  benchmark]['total_sales'].mean()
+    acima  = clean_score_sales[clean_score_sales['critic_score'] >= benchmark]['total_sales'].mean()
+    delta_pct = ((acima - abaixo) / abaixo * 100) if abaixo > 0 else 0
+
+    # ── 4. Gráfico ────────────────────────────────────────────────────
     fig = go.Figure()
+
     fig.add_trace(go.Scatter(
         x=x, y=y,
         mode='markers',
         name='Dados',
         marker=dict(size=8, opacity=0.7, color='steelblue'),
-        hovertemplate='Nota: %{x}<br>Vendas: %{y:.2f}M<extra></extra>'
+        customdata=clean_score_sales[['total_titles']].values,
+        hovertemplate='Nota: %{x}<br>Vendas: %{y:.2f}M<br>Títulos: %{customdata[0]}<extra></extra>',
     ))
+
     fig.add_trace(go.Scatter(
         x=x_line, y=y_line,
         mode='lines',
         name=f'Tendência (y = {m:.3f}x + {b:.2f})',
-        line=dict(color='red', width=2)
+        line=dict(color='red', width=2),
     ))
-    fig.update_layout(
-        title='Relação entre Nota da Crítica e Vendas Totais (Soma por Nota)',
-        xaxis_title='Nota da Crítica',
-        yaxis_title='Vendas Totais (milhões)',
-        height=500,
-        width=700,
-        margin=dict(t=50, b=50)
+    
+    # Linha de benchmark
+    fig.add_vline(
+        x=benchmark,
+        line=dict(color='rgba(46,204,113,0.8)', width=2, dash='dash'),
     )
+
+    # Anotação do benchmark
+    fig.add_annotation(
+        x=benchmark, y=1, yref='paper',
+        text=(
+            f'<b>Benchmark: {benchmark:.1f}</b><br>'
+            f'Salto de +{delta_pct:.0f}% nas vendas'
+        ),
+        showarrow=False,
+        xanchor='left',
+        font=dict(size=11, color='rgba(46,204,113,0.9)'),
+        bgcolor='rgba(0,0,0,0.4)',
+        borderpad=4,
+        yanchor='top',
+    )
+
+    # Zona abaixo
+    fig.add_annotation(
+        x=clean_score_sales['critic_score'].min(), y=0.05, yref='paper',
+        text=f'Média abaixo: {abaixo:.1f}M',
+        showarrow=False, xanchor='left',
+        font=dict(size=10, color='rgba(231,76,60,0.7)'),
+    )
+
+    # Zona acima
+    fig.add_annotation(
+        x=benchmark, y=0.05, yref='paper',
+        text=f'Média acima: {acima:.1f}M',
+        showarrow=False, xanchor='left',
+        font=dict(size=10, color='rgba(46,204,113,0.7)'),
+    )
+
+    # Faixa visual — abaixo do benchmark
+    fig.add_vrect(
+        x0=clean_score_sales['critic_score'].min(),
+        x1=benchmark,
+        fillcolor='rgba(231,76,60,0.05)',
+        line_width=0,
+    )
+
+    # Faixa visual — acima do benchmark
+    fig.add_vrect(
+        x0=benchmark,
+        x1=clean_score_sales['critic_score'].max(),
+        fillcolor='rgba(46,204,113,0.05)',
+        line_width=0,
+    )
+
+    fig.update_layout(
+        title=dict(
+            text='Relação entre Nota da Crítica e Vendas Totais (Soma por Nota)<br>'
+                 '<sup>Filtro: vendas ≥ 0.5M | Outliers top 5% removidos | Regressão no intervalo central</sup>',
+            font=dict(size=16),
+            x=0.01,
+        ),
+        xaxis=dict(
+            title='Nota da Crítica',
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.06)',
+        ),
+        yaxis=dict(
+            title='Vendas Totais (milhões)',
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.06)',
+        ),
+        height=500,
+        margin=dict(t=80, l=60, r=40, b=50),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+
     return fig
 
 # Função 2 - Matriz de Hype vs. Pérolas
@@ -311,8 +429,7 @@ def plot_hype_premium(df, min_sales=0.0):
 
     return fig
 
-#Função 3 - Valor Exponencial de Venda por Critic Score
-def score_threshold_analysis(df, min_sales=0.0):
+
     """
     Identifica o limiar de nota da crítica (critic_score) que maximiza a diferença
     de vendas médias entre jogos acima e abaixo dele e exibe a curva da média de vendas
@@ -462,7 +579,7 @@ def score_threshold_analysis(df, min_sales=0.0):
 
     return fig
 
-#Função 4 - Ticket por Ponto de Score (Venda por Avaliação)
+#Função 3 - Ticket por Ponto de Score (Venda por Avaliação)
 def ticket_per_score_holdings(df1, min_sales=0.0):
     """
     Calcula o Ticket por Ponto de Score (Vendas por Avaliação) por holding
@@ -586,7 +703,7 @@ def ticket_per_score_holdings(df1, min_sales=0.0):
 
     return fig
 
-#Função 5 - Excelência Regional de Crítica por Desenvolvedores
+#Função 4 - Excelência Regional de Crítica por Desenvolvedores
 def regional_excelence(df1):
     """
     Gera um mapa coroplético com a média do critic_score por país de origem
@@ -673,7 +790,7 @@ def regional_excelence(df1):
 
     return fig
 
-#Função 6 - Data Reliability (% de Jogos com Critic Score Preenchido)
+#Função 5 - Data Reliability (% de Jogos com Critic Score Preenchido)
 def data_reliability(df1):
     """
     Gera um Gauge Chart com o percentual de jogos que possuem critic_score preenchido.
@@ -779,17 +896,15 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('⭐ Qualidade vs. Vendas - Predictive Validity (ROI)')
-st.markdown(""" Métricas relacionadas a qualidade dos jogos vendidos pela industria e o comportamento 
+st.markdown("""- Métricas relacionadas a qualidade dos jogos vendidos pela industria e o comportamento 
 do mercado mundial baseado nas notas da critica """)
 
 #Call the Functions
 fig_coor_between_sales_critic = correlation_beteween_score_sales(df1)                   # <- Função 1 - Correlação entre Qualidade do Jogo e o Número de Vendas
 fig_hype_premium = plot_hype_premium(df1, min_sales=0.5)                                # <- Função 2 - Matriz de Hype vs. Pérolas
-fig_treshold_score = score_threshold_analysis(df1, min_sales=0.5)                       # <- Função 3 - Valor Exponencial de Venda por Critic Score
-fig_mean_ticket_holding = ticket_per_score_holdings(df1, min_sales=0.5)                 # <- Função 4 - Ticket por Ponto de Score (Venda por Avaliação)
-fig_regional_devs_score = regional_excelence(df1)                                       # <- Função 5 - Excelência Regional de Crítica por Desenvolvedores
-fig_confiability_critic = data_reliability(df1)                                         # <- Função 6 - Data Reliability (% de Jogos com Critic Score Preenchido)
-
+fig_mean_ticket_holding = ticket_per_score_holdings(df1, min_sales=0.5)                 # <- Função 3 - Ticket por Ponto de Score (Venda por Avaliação)
+fig_regional_devs_score = regional_excelence(df1)                                       # <- Função 4 - Excelência Regional de Crítica por Desenvolvedores
+fig_confiability_critic = data_reliability(df1)                                         # <- Função 5 - Data Reliability (% de Jogos com Critic Score Preenchido)
 
 st.divider()
 
@@ -806,7 +921,6 @@ with tab1:
         st.markdown("### Relação entre a Qualidade do Jogo e o Número de Vendas")
         st.plotly_chart(fig_coor_between_sales_critic, width='stretch')
         st.plotly_chart(fig_hype_premium, width='stretch')
-        st.plotly_chart(fig_treshold_score, width='stretch')
 
     st.divider()
 
