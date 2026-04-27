@@ -1,66 +1,20 @@
 # BrasCo - Gaming Ltd: Visão Estratégica & ROI
 
-Link para o projeto: 
+Link para o projeto: https://brasco-videogames-sales.streamlit.app
 
 <p align="center">
 <img src="./assets/img/fluxo.png" alt="Projeto Estratégico da BrasCo - Gaming Ltd" width="800px">
 </p>
 
 ## 🎯 Problema de Negócio
-A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O problema central é a fragmentação de dados que impede a BrasCo. de prever o sucesso comercial de novos títulos. Esta solução busca responder:
+A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O objetivo do projeto é entender o mercado de video games global direcionando o lançamento de de novos títulos para o sucesso comercial da empresa.
+
+## 🔍 Premissas para Análise
 1. Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
 2. Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
 3. Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
 
-## 📈 Principais Resultados
-Os insights trazidos por esse painel KPIs de negocio respondem as perguntas acima:
-- Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
-- Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do genero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
-- Para mitigação de risco, devemos construir títulos com nota alvo de 7.5 (Shooters são ótimo estando na casa do 7.2)
-- Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos titulos com segurança)
-- Investimento de Alto Risco🚨: O Genero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
-
-## 📂 Fonte de Dados
-Os dados utilizados são públicos e foram coletados via Kaggle:
-
-https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024
-
-## 🛠️ Stack Técnica
-As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste projeto:
-- Linguagem: Python 3.8+
-- Framework Web: Streamlit
-- Manipulação de Dados: Pandas, NumPy
-- Visualização de Dados: Plotly
-- Gerenciamento de Ambiente: pip
-
-## 🧱 Processo de Análise: Arquitetura de Dados (Medallion Architecture)
-Para garantir a confiabilidade, implementei uma lógica de processamento em camadas, otimizada em Python:
-- 🥉 **Camada Bronze (Raw)**: Preservação do dataset original do Kaggle.
-- 🥈 **Camada Silver (Trusted)**: Processo intensivo de limpeza, tratamento e padronização de nomes de holdings, remoção de duplicatas e ingestão de dados históricos dentre os principais a classificação Premium (>= 9) usando o critic_score, fabricantes, geração dos consoles, anos de atividade do console, data de lançamentos dos consoles e países de developers e publishers.
-- 🥇 **Camada Gold (Refined)**: Agregação de dados para criação dos KPIs de negócio (ROI, Attach Rate, Market Share) prontos para consumo no Dashboard.
-
-## 🔍 Integridade dos Dados
-A integridade dos dados foi conferida por:
-- Verificação de valores nulos
-- Anomalias de volume nas vendas (total_sales, na_sales, jp_sales, pal_sales, other_sales)
-
-## 📂 Arquitetura do Projeto
-### A estrutura do repositório está organizada da seguinte forma:
-
-```text
-video_games_sales/
-├── assets/             # Imagens e recursos visuais utilizados no README e os dados brutos video_game_sales.csv e dataset_limpeza.
-├── notebooks           # Jupyter Notebook com o código da limpeza de dados e enriquecimento de informações do dataset
-├── pages/              # Páginas secundárias do dashboard Streamlit
-├── utils/              # Funções relacionadas a limpeza de dados e carregamento do sidebar com os filtros como funções úteis
-├── .gitignore          # Arquivos e pastas a serem ignorados pelo Git.
-├── app.py              # Arquivo principal que renderiza a página inicial do dashboard com as principais instruções.
-├── LICENSE             # Licença MIT do projeto.
-├── README.md           # Documentação principal do projeto.
-└── requirements.txt    # Lista de bibliotecas Python necessárias.
-```
-
-## 📈 Funcionalidades e Visualizações
+## 📈 Estratégias para Solução do problema
 #### O dashboard está dividido em seis paginas com visão estratégicas do mercado com relação a empresas, consoles e consumidores. Todas as páginas são acessíveis pelo menu lateral e os gráficos são interativos podendo ser filtrados pela geração dos consoles e as principais empresas do mercado, além de um filtro avançado.
 
 1. **Marketplace Overview**
@@ -92,6 +46,57 @@ video_games_sales/
 - Focada em métricas de correlação entre qualidade (Score) e retorno financeiro para mitigação de risco.
 - Métricas Chave: Multiplicador de Vendas por Score, Threshold de Nota Alvo (8) e Index do Critic_Score.
 - Gráficos: Gráfico de Dispersão com Quadrantes (Hype vs. Pérolas Escondidas), Nota Otima de Aumento de Vendas.
+
+## 📈 Principais Resultados
+Os insights trazidos por esse painel KPIs de negocio respondem as perguntas acima:
+- Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
+- Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do genero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
+- Para mitigação de risco, devemos construir títulos com nota alvo de 7.5 (Shooters são ótimo estando na casa do 7.2)
+- Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos titulos com segurança)
+- Investimento de Alto Risco🚨: O Genero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
+
+## 👩‍💻 Conclusão
+O objetivo desse projeto é criar um conjunto de gráficos e/ou tabelas para exibir as métricas ao CEO da melhor forma possível. Os resultados demonstram que baseado na análise histórica de mercado, o foco deve ser na América do Norte (37% do market share) em parceria com a Microsoft Corportion para otimizar a receita com um baixo custo por ponto de score ($0,32M) focando o desenvolvimento em titulos do genero shooter e observando sempre o 3º ano da geração de novos consoles (quando a curva de vendas começa a subir para a nova geração)
+
+## 🛠️ Stack Técnica
+As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste projeto:
+- Linguagem: Python 3.8+
+- Framework Web: Streamlit
+- Manipulação de Dados: Pandas, NumPy
+- Visualização de Dados: Plotly
+- Gerenciamento de Ambiente: pip
+
+### 📂 Fonte de Dados
+Os dados utilizados são públicos e foram coletados via Kaggle:
+
+https://www.kaggle.com/datasets/asaniczka/video-game-sales-2024
+
+### 🧱 Processo de Análise: Arquitetura de Dados (Medallion Architecture)
+Para garantir a confiabilidade, implementei uma lógica de processamento em camadas, otimizada em Python:
+- 🥉 **Camada Bronze (Raw)**: Preservação do dataset original do Kaggle.
+- 🥈 **Camada Silver (Trusted)**: Processo intensivo de limpeza, tratamento e padronização de nomes de holdings, remoção de duplicatas e ingestão de dados históricos dentre os principais a classificação Premium (>= 9) usando o critic_score, fabricantes, geração dos consoles, anos de atividade do console, data de lançamentos dos consoles e países de developers e publishers.
+- 🥇 **Camada Gold (Refined)**: Agregação de dados para criação dos KPIs de negócio (ROI, Attach Rate, Market Share) prontos para consumo no Dashboard.
+
+### 🔍 Integridade dos Dados
+A integridade dos dados foi conferida por:
+- Verificação de valores nulos
+- Anomalias de volume nas vendas (total_sales, na_sales, jp_sales, pal_sales, other_sales)
+
+### 📂 Arquitetura do Projeto
+### A estrutura do repositório está organizada da seguinte forma:
+
+```text
+video_games_sales/
+├── assets/             # Imagens e recursos visuais utilizados no README e os dados brutos video_game_sales.csv e dataset_limpeza.
+├── notebooks           # Jupyter Notebook com o código da limpeza de dados e enriquecimento de informações do dataset
+├── pages/              # Páginas secundárias do dashboard Streamlit
+├── utils/              # Funções relacionadas a limpeza de dados e carregamento do sidebar com os filtros como funções úteis
+├── .gitignore          # Arquivos e pastas a serem ignorados pelo Git.
+├── app.py              # Arquivo principal que renderiza a página inicial do dashboard com as principais instruções.
+├── LICENSE             # Licença MIT do projeto.
+├── README.md           # Documentação principal do projeto.
+└── requirements.txt    # Lista de bibliotecas Python necessárias.
+```
 
 ## 👩‍💻 Autor
  Desenvolvido por Guilherme Grandim como um projeto de portifólio em Ciencias/Analise de Dados</br>
