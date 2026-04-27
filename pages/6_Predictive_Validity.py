@@ -57,15 +57,14 @@ holdings_colors = {
 #Função 1 - Correlação entre Qualidade do Jogo e o Número de Vendas
 def correlation_beteween_score_sales(df1):
     """
-    Gera um gráfico de dispersão com linha de tendência entre a nota da crítica (critic_score)
-    e o total de vendas (total_sales), utilizando regressão linear para destacar a correlação,
-    e destacar qual o ponto onde as vendas aumentam.
+    Gera gráficos de dispersão e benchmark (threshold) para a relação entre nota da crítica e vendas médias.
 
-    Agrupa as vendas totais por nota da crítica (soma), mantendo apenas jogos com vendas
-    positivas e avaliação válida e um minimo de titulos lançados
+    A função calcula a média de vendas por nota da crítica, traça uma linha de regressão linear e
+    identifica o ponto de corte (benchmark) que maximiza a diferença de vendas médias entre os grupos
+    "abaixo" e "acima/igual" da nota candidata.
 
-    Responde à pergunta:
-    "Existe uma relação positiva entre a nota da crítica e o sucesso comercial dos jogos?"
+    O objetivo é encontrar a nota mínima que garante bom retorno comercial sem exigir excelência máxima
+    (notas muito altas), permitindo configurar faixas realistas de busca.
 
     Parâmetros
     ----------
@@ -75,45 +74,80 @@ def correlation_beteween_score_sales(df1):
     Retorna
     -------
     fig : plotly.graph_objects.Figure
-        Gráfico de dispersão com pontos representando a soma das vendas por nota da crítica
-        e linha de tendência (regressão linear) exibindo a equação da reta.
+        Gráfico principal (dispersão + linha de tendência + benchmark).
+    fig_marginal : plotly.graph_objects.Figure ou None
+        Gráfico de barras com o ganho marginal por nota candidata.
+
+    Configurações ajustáveis (altere os valores no início da função)
+    ----------------------------------------------------------------
+    MIN_BENCHMARK_SCORE : int, padrão=5
+        Menor nota candidata a threshold (limite inferior da busca).
+
+    MAX_BENCHMARK_SCORE : int, padrão=8
+        Maior nota candidata a threshold (limite superior da busca).
+        Valores típicos: 8 para evitar notas extremas (9 ou 10), ou 9 se desejar incluí-las.
+
+    MIN_GROUP_SIZE : int, padrão=20
+        Número mínimo de jogos exigido em cada grupo (abaixo e acima do candidato).
+        Valores maiores (≥20) garantem robustez estatística e descartam notas altas
+        com poucos jogos, favorecendo oportunidades em notas médias (7-8).
+        Valores menores (10-15) permitem capturar notas mais altas, mas com maior risco
+        de viés por amostra pequena.
+
+    MIN_TITLES_PER_SCORE : int, padrão=10
+        Número mínimo de títulos únicos exigido para que uma nota seja exibida no gráfico
+        de dispersão (não influencia o cálculo do benchmark, apenas a visualização).
+
+    Exemplo de ajuste
+    -----------------
+    Para buscar benchmarks apenas entre notas 6 e 8, com grupos de pelo menos 30 jogos:
+        MIN_BENCHMARK_SCORE = 6
+        MAX_BENCHMARK_SCORE = 8
+        MIN_GROUP_SIZE = 30
     """
+
     # ── 1. Limpeza dos dados ──────────────────────────────────────────
-    df_clean_score_sales = (
+    df_clean = (
         df1.loc[df1['total_sales'] >= 0.5]
            .dropna(subset=['critic_score'])
+           .copy()
     )
 
     # Remove outliers de vendas (top 5%)
-    p95 = df_clean_score_sales['total_sales'].quantile(0.95)
-    df_clean_score_sales = df_clean_score_sales[df_clean_score_sales['total_sales'] <= p95]
+    p95 = df_clean['total_sales'].quantile(0.95)
+    df_clean = df_clean[df_clean['total_sales'] <= p95]
 
-    # Verifica se há dados suficientes
-    if df_clean_score_sales.empty or len(df_clean_score_sales) < 2:
+    if df_clean.empty or len(df_clean) < 20:
         fig = go.Figure()
         fig.add_annotation(
-            text="Dados insuficientes para calcular correlação (poucos jogos com nota e vendas)",
+            text="Dados insuficientes para calcular correlação",
             xref="paper", yref="paper", x=0.5, y=0.5, showarrow=False,
             font=dict(size=14, color="gray")
         )
         fig.update_layout(height=500)
-        return fig
+        return fig, None
 
-    # ── 2. Agrupamento dos Dados ──────────────────────────────────────
-    clean_score_sales = (
-        df_clean_score_sales.groupby('critic_score')
+    # Configurações Ajustaveis
+    
+    MIN_BENCHMARK_SCORE = 5      # menor nota candidata a threshold
+    MAX_BENCHMARK_SCORE = 9      # maior nota candidata a threshold
+    MIN_GROUP_SIZE = 20          # mínimo de jogos abaixo e acima do candidato
+    MIN_TITLES_PER_SCORE = 10    # mínimo de títulos por nota (para exibição no gráfico)
+    
+    # ── 2. Agrupamento por nota: média e contagem de títulos ──────────
+    score_stats = (
+        df_clean.groupby('critic_score')
         .agg(
-            total_sales  = ('total_sales', 'sum'),
-            total_titles = ('title', 'nunique'),
+            mean_sales = ('total_sales', 'mean'),
+            total_titles = ('title', 'nunique')
         )
         .reset_index()
     )
-    
-    # Remove notas com menos de 10 títulos — amostra pequena distorce a soma
-    clean_score_sales = clean_score_sales[clean_score_sales['total_titles'] >= 15]
-    
-    # Verifica se ainda há dados após o filtro
-    if len(clean_score_sales) < 2:
+
+    # Filtra notas com pelo menos 10 títulos (para suavizar a curva)
+    score_stats = score_stats[score_stats['total_titles'] >= MIN_TITLES_PER_SCORE]
+
+    if len(score_stats) < 2:
         fig = go.Figure()
         fig.add_annotation(
             text="Dados insuficientes após filtro de mínimo de títulos por nota",
@@ -121,47 +155,66 @@ def correlation_beteween_score_sales(df1):
             font=dict(size=14, color="gray")
         )
         fig.update_layout(height=500)
-        return fig
+        return fig, None
 
-    x = clean_score_sales['critic_score'].values
-    y = clean_score_sales['total_sales'].values
+    # ── 3. Regressão linear (no intervalo central) ───────────────────
+    x = score_stats['critic_score'].values
+    y = score_stats['mean_sales'].values
 
-    # ── 3. Regressão linear — apenas intervalo central (5%–95%) ──────
-    q05 = np.quantile(x, 0.05)
-    q95 = np.quantile(x, 0.95)
+    q05, q95 = np.quantile(x, 0.05), np.quantile(x, 0.95)
     mask = (x >= q05) & (x <= q95)
     m, b = np.polyfit(x[mask], y[mask], 1)
 
     x_line = np.linspace(x.min(), x.max(), 100)
     y_line = m * x_line + b
-    
-    # ── 3.1 Benchmark automático — ponto de maior salto de vendas ────
-    clean_score_sales = clean_score_sales.sort_values('critic_score')
 
-    # Variação % de vendas entre notas consecutivas
-    clean_score_sales['sales_pct_change'] = (
-        clean_score_sales['total_sales'].pct_change() * 100
-    )
+    # ── 4. Benchmark robusto SOMENTE nas notas 5 a 8 ──────────────────
+    best_score = None
+    best_diff = -1
+    best_mean_above = 0
+    best_mean_below = 0
+    marginal_gains = []  # guarda (score, diff) para gráfico auxiliar
 
-    # Nota com maior salto positivo = ponto de inflexão
-    idx_inflexao  = clean_score_sales['sales_pct_change'].idxmax()
-    benchmark     = clean_score_sales.loc[idx_inflexao, 'critic_score']
+    # Testa apenas as notas que interessam ao negócio
+    for score in range(MIN_BENCHMARK_SCORE, MAX_BENCHMARK_SCORE + 1):
+        above = df_clean[df_clean['critic_score'] >= score]['total_sales']
+        below = df_clean[df_clean['critic_score'] < score]['total_sales']
+        # Exige pelo menos 20 jogos em cada grupo (robustez)
+        if len(above) >= 20 and len(below) >= 20:
+            diff = above.mean() - below.mean()
+            marginal_gains.append((score, diff, above.mean(), below.mean()))
+            if diff > best_diff:
+                best_diff = diff
+                best_score = score
+                best_mean_above = above.mean()
+                best_mean_below = below.mean()
 
-    # Médias de vendas abaixo e acima do benchmark
-    abaixo = clean_score_sales[clean_score_sales['critic_score'] <  benchmark]['total_sales'].mean()
-    acima  = clean_score_sales[clean_score_sales['critic_score'] >= benchmark]['total_sales'].mean()
-    delta_pct = ((acima - abaixo) / abaixo * 100) if abaixo > 0 else 0
+    # Fallback seguro (se nenhum atender, usa a mediana do intervalo 5-8)
+    if best_score is None:
+        df_range = df_clean[(df_clean['critic_score'] >= MIN_BENCHMARK_SCORE) & (df_clean['critic_score'] <= MAX_BENCHMARK_SCORE)]
+        if not df_range.empty:
+            best_score = int(df_range['critic_score'].median())
+            best_mean_above = df_clean[df_clean['critic_score'] >= best_score]['total_sales'].mean()
+            best_mean_below = df_clean[df_clean['critic_score'] < best_score]['total_sales'].mean()
+            best_diff = best_mean_above - best_mean_below
+        else:
+            best_score = 7  # valor padrão sensato
+            best_mean_above = df_clean[df_clean['critic_score'] >= best_score]['total_sales'].mean()
+            best_mean_below = df_clean[df_clean['critic_score'] < best_score]['total_sales'].mean()
+            best_diff = best_mean_above - best_mean_below
 
-    # ── 4. Gráfico ────────────────────────────────────────────────────
+    delta_pct = (best_mean_above - best_mean_below) / best_mean_below * 100 if best_mean_below > 0 else 0
+
+    # ── 5. Gráfico principal (dispersão + benchmark) ──────────────────
     fig = go.Figure()
 
     fig.add_trace(go.Scatter(
         x=x, y=y,
         mode='markers',
-        name='Dados',
+        name='Média de vendas por nota',
         marker=dict(size=8, opacity=0.7, color='steelblue'),
-        customdata=clean_score_sales[['total_titles']].values,
-        hovertemplate='Nota: %{x}<br>Vendas: %{y:.2f}M<br>Títulos: %{customdata[0]}<extra></extra>',
+        customdata=score_stats[['total_titles']].values,
+        hovertemplate='Nota: %{x}<br>Venda Média: %{y:.2f}M<br>Títulos: %{customdata[0]}<extra></extra>',
     ))
 
     fig.add_trace(go.Scatter(
@@ -170,84 +223,80 @@ def correlation_beteween_score_sales(df1):
         name=f'Tendência (y = {m:.3f}x + {b:.2f})',
         line=dict(color='red', width=2),
     ))
-    
-    # Linha de benchmark
+
     fig.add_vline(
-        x=benchmark,
+        x=best_score,
         line=dict(color='rgba(46,204,113,0.8)', width=2, dash='dash'),
     )
 
-    # Anotação do benchmark
     fig.add_annotation(
-        x=benchmark, y=1, yref='paper',
+        x=best_score, y=1, yref='paper',
         text=(
-            f'<b>Benchmark: {benchmark:.1f}</b><br>'
-            f'Salto de +{delta_pct:.0f}% nas vendas'
+            f'<b>Benchmark ({MIN_BENCHMARK_SCORE}-{MAX_BENCHMARK_SCORE}): Nota ≥ {best_score}</b><br>'
+            f'Vendas médias acima: {best_mean_above:.2f}M<br>'
+            f'Vendas médias abaixo: {best_mean_below:.2f}M<br>'
+            f'Ganho: +{delta_pct:.0f}%'
         ),
         showarrow=False,
-        xanchor='left',
+        xanchor='left' if best_score < 7 else 'right',
         font=dict(size=11, color='rgba(46,204,113,0.9)'),
-        bgcolor='rgba(0,0,0,0.4)',
+        bgcolor='rgba(0,0,0,0.6)',
         borderpad=4,
         yanchor='top',
     )
 
-    # Zona abaixo
-    fig.add_annotation(
-        x=clean_score_sales['critic_score'].min(), y=0.05, yref='paper',
-        text=f'Média abaixo: {abaixo:.1f}M',
-        showarrow=False, xanchor='left',
-        font=dict(size=10, color='rgba(231,76,60,0.7)'),
-    )
-
-    # Zona acima
-    fig.add_annotation(
-        x=benchmark, y=0.05, yref='paper',
-        text=f'Média acima: {acima:.1f}M',
-        showarrow=False, xanchor='left',
-        font=dict(size=10, color='rgba(46,204,113,0.7)'),
-    )
-
-    # Faixa visual — abaixo do benchmark
+    # Faixas visuais
     fig.add_vrect(
-        x0=clean_score_sales['critic_score'].min(),
-        x1=benchmark,
-        fillcolor='rgba(231,76,60,0.05)',
-        line_width=0,
+        x0=score_stats['critic_score'].min(), x1=best_score,
+        fillcolor='rgba(231,76,60,0.05)', line_width=0,
     )
-
-    # Faixa visual — acima do benchmark
     fig.add_vrect(
-        x0=benchmark,
-        x1=clean_score_sales['critic_score'].max(),
-        fillcolor='rgba(46,204,113,0.05)',
-        line_width=0,
+        x0=best_score, x1=score_stats['critic_score'].max(),
+        fillcolor='rgba(46,204,113,0.05)', line_width=0,
     )
 
     fig.update_layout(
         title=dict(
-            text='Relação entre Nota da Crítica e Vendas Totais (Soma por Nota)<br>'
-                 '<sup>Filtro: vendas ≥ 0.5M | Outliers top 5% removidos | Regressão no intervalo central</sup>',
+            text=(
+                f'Relação entre Nota da Crítica e Vendas Médias por Título<br>'
+                f'<sup>Benchmark calculado nas notas {MIN_BENCHMARK_SCORE}-{MAX_BENCHMARK_SCORE} | '
+                f'Grupo mínimo: {MIN_GROUP_SIZE} jogos | Mínimo títulos por nota: {MIN_TITLES_PER_SCORE}</sup>'
+            ),
             font=dict(size=16),
             x=0.01,
         ),
-        xaxis=dict(
-            title='Nota da Crítica',
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.06)',
-        ),
-        yaxis=dict(
-            title='Vendas Totais (milhões)',
-            showgrid=True,
-            gridcolor='rgba(0,0,0,0.06)',
-        ),
+        xaxis=dict(title='Nota da Crítica', showgrid=True, gridcolor='rgba(0,0,0,0.06)'),
+        yaxis=dict(title='Vendas Médias (milhões)', showgrid=True, gridcolor='rgba(0,0,0,0.06)'),
         height=500,
         margin=dict(t=80, l=60, r=40, b=50),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
 
-    return fig
+    # ── 6. Gráfico auxiliar: ganho marginal por nota candidata ──────
+    if marginal_gains:
+        scores = [g[0] for g in marginal_gains]
+        diffs = [g[1] for g in marginal_gains]
+        fig_marginal = go.Figure(go.Bar(
+            x=scores, y=diffs,
+            marker_color=['#2ECC71' if s == best_score else '#BDC3C7' for s in scores],
+            text=[f'{d:.2f}M' for d in diffs],
+            textposition='outside',
+            hovertemplate='Nota candidata: %{x}<br>Ganho marginal: %{y:.2f}M<extra></extra>'
+        ))
+        fig_marginal.update_layout(
+            title='Ganho marginal (vendas médias acima vs. abaixo) por nota candidata',
+            xaxis_title='Nota candidata (threshold)',
+            yaxis_title='Diferença de vendas médias (milhões)',
+            height=300,
+            margin=dict(t=50, b=30),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+        )
+    else:
+        fig_marginal = None
+
+    return fig, fig_marginal
 
 # Função 2 - Matriz de Hype vs. Pérolas
 def plot_hype_premium(df, min_sales=0.0):
@@ -900,11 +949,11 @@ st.markdown("""- Métricas relacionadas a qualidade dos jogos vendidos pela indu
 do mercado mundial baseado nas notas da critica """)
 
 #Call the Functions
-fig_coor_between_sales_critic = correlation_beteween_score_sales(df1)                   # <- Função 1 - Correlação entre Qualidade do Jogo e o Número de Vendas
-fig_hype_premium = plot_hype_premium(df1, min_sales=0.5)                                # <- Função 2 - Matriz de Hype vs. Pérolas
-fig_mean_ticket_holding = ticket_per_score_holdings(df1, min_sales=0.5)                 # <- Função 3 - Ticket por Ponto de Score (Venda por Avaliação)
-fig_regional_devs_score = regional_excelence(df1)                                       # <- Função 4 - Excelência Regional de Crítica por Desenvolvedores
-fig_confiability_critic = data_reliability(df1)                                         # <- Função 5 - Data Reliability (% de Jogos com Critic Score Preenchido)
+fig_coor_between_sales_critic, fig_marginal_gain = correlation_beteween_score_sales(df1)    # <- Função 1 - Correlação entre Qualidade do Jogo e o Número de Vendas
+fig_hype_premium = plot_hype_premium(df1, min_sales=0.5)                                    # <- Função 2 - Matriz de Hype vs. Pérolas
+fig_mean_ticket_holding = ticket_per_score_holdings(df1, min_sales=0.5)                     # <- Função 3 - Ticket por Ponto de Score (Venda por Avaliação)
+fig_regional_devs_score = regional_excelence(df1)                                           # <- Função 4 - Excelência Regional de Crítica por Desenvolvedores
+fig_confiability_critic = data_reliability(df1)                                             # <- Função 5 - Data Reliability (% de Jogos com Critic Score Preenchido)
 
 st.divider()
 
@@ -920,6 +969,8 @@ with tab1:
     with st.container():
         st.markdown("### Relação entre a Qualidade do Jogo e o Número de Vendas")
         st.plotly_chart(fig_coor_between_sales_critic, width='stretch')
+        if fig_marginal_gain:
+            st.plotly_chart(fig_marginal_gain, width='stretch')
         st.plotly_chart(fig_hype_premium, width='stretch')
 
     st.divider()
