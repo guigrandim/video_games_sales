@@ -16,7 +16,7 @@ import numpy as np
 # Configuration Page
 #==================================
 
-st.set_page_config(page_title = 'Marketplace Overview', page_icon = '🏠', layout = 'wide')
+st.set_page_config(page_title = 'Marketplace Overview - Visão Geral', page_icon = '🌐', layout = 'wide')
 
 #===================================
 # Functions
@@ -476,7 +476,7 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 #======================================
 
 #Create a Header
-st.title ('🏠 Home - Marketplace Overview')
+st.title ('🌐 Marketplace Overview - Visão Geral')
 st.markdown("""- Métricas mostrando o tamanho do mercado e o comportamento geral de vendas """)
 
 #Call the Functions

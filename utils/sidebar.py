@@ -3,6 +3,27 @@ import pandas as pd
 from utils.data_loader import dataset_clean
 from pathlib import Path
 
+def render_sidebar_rodape() -> None:
+    """
+    Renderiza apenas o rodapé da barra lateral:
+    logo secundária, nome do autor e links externos.
+    """
+    base_dir   = Path(__file__).parents[1]
+    logo2_path = base_dir / 'assets' / 'img' / 'logo2.png'
+
+    with st.sidebar:
+        if logo2_path.exists():
+            st.image(str(logo2_path), width=200)
+        else:
+            st.warning('Imagem não encontrada')
+
+        st.markdown(
+            "<p style='text-align: left;'>Owner: Guilherme Grandim</p>",
+            unsafe_allow_html=True,
+        )
+        st.link_button("Visite meu LinkedIn ℹ️",   "https://www.linkedin.com/in/guilherme-grandim/")
+        st.link_button("Visite meu portifólio 🗂️", "https://guigrandim.github.io/portifolio_projetos/")
+
 
 def render_sidebar():
     """
@@ -41,14 +62,14 @@ def render_sidebar():
     df1 = dataset_clean().copy()
 
     # ── Paths das imagens ─────────────────────────────────────────────────────
-    base_dir    = Path(__file__).parents[1]
-    logo1_path  = base_dir / 'assets' / 'img' / 'logo1.png'
-    logo2_path  = base_dir / 'assets' / 'img' / 'logo2.png'
+    base_dir   = Path(__file__).parents[1]
+    logo1_path = base_dir / 'assets' / 'img' / 'logo1.png'
+    logo2_path = base_dir / 'assets' / 'img' / 'logo2.png'
 
     # ── Opções dos filtros primários (antes de qualquer filtro) ───────────────
     MIN_MANUFACTURE_SALES = 0.5
-    
-    opcoes_generation  = ['Todas as Gerações']  + sorted(df1['generation'].unique().tolist())
+
+    opcoes_generation  = ['Todas as Gerações'] + sorted(df1['generation'].unique().tolist())
     opcoes_manufacture = ['Todas as Empresas'] + (
         df1.groupby('manufacture')['total_sales']
         .sum()
@@ -69,8 +90,8 @@ def render_sidebar():
         st.divider()
 
         # Filtros primários
-        filter_generation  = st.selectbox('Selecione a Geração',  options=opcoes_generation,  index=0)
-        filter_manufacture = st.selectbox('Selecione a Empresa',  options=opcoes_manufacture, index=0)
+        filter_generation  = st.selectbox('Selecione a Geração', options=opcoes_generation,  index=0)
+        filter_manufacture = st.selectbox('Selecione a Empresa', options=opcoes_manufacture, index=0)
 
         # Aplica filtros primários antes de popular os multiselects
         if filter_generation  != 'Todas as Gerações':
@@ -88,8 +109,8 @@ def render_sidebar():
         )
 
         with st.expander('Filtros Avançados'):
-            filter_genero  = st.multiselect('Selecione o Gênero',   options=opcoes_genero,  default=opcoes_genero)
-            filter_console = st.multiselect('Selecione o Console',  options=opcoes_console, default=opcoes_console)
+            filter_genero  = st.multiselect('Selecione o Gênero',  options=opcoes_genero,  default=opcoes_genero)
+            filter_console = st.multiselect('Selecione o Console', options=opcoes_console, default=opcoes_console)
 
             # Garante que lista vazia não anula o filtro
             filter_genero  = filter_genero  if filter_genero  else opcoes_genero
@@ -97,18 +118,7 @@ def render_sidebar():
 
         st.divider()
 
-        # Logo secundária
-        if logo2_path.exists():
-            st.image(str(logo2_path), width=200)
-        else:
-            st.warning('Imagem não encontrada')
-
-        st.markdown(
-            "<p style='text-align: left;'>Owner: Guilherme Grandim</p>",
-            unsafe_allow_html=True,
-        )
-        st.link_button("Visite meu LinkedIn ℹ️", "https://www.linkedin.com/in/guilherme-grandim/")
-        st.link_button("Visite meu portifólio 🗂️", "https://guigrandim.github.io/portifolio_projetos/")
+        render_sidebar_rodape()
 
     # ── Aplica filtros avançados ──────────────────────────────────────────────
     df1 = df1[df1['genre'].isin(filter_genero)]

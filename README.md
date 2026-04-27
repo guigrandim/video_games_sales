@@ -4,13 +4,15 @@
 <img src="./assets/img/fluxo.png" alt="Projeto Estratégico da BrasCo - Gaming Ltd" width="800px">
 </p>
 
+Link para o projeto: 
+
 ## 🎯 Problema de Negócio
 A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O problema central é a fragmentação de dados que impede a BrasCo. de prever o sucesso comercial de novos títulos. Esta solução busca responder:
 1. Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
 2. Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
 3. Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
 
-## 📈 Principas Resultados
+## 📈 Principais Resultados
 Os insights trazidos por esse painel KPIs de negocio respondem as perguntas acima:
 - Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
 - Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do genero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
@@ -31,14 +33,16 @@ As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste
 - Visualização de Dados: Plotly
 - Gerenciamento de Ambiente: pip
 
-## 🧱 Processo de Analise: Arquitetura de Dados (Medallion Architecture)
+## 🧱 Processo de Análise: Arquitetura de Dados (Medallion Architecture)
 Para garantir a confiabilidade, implementei uma lógica de processamento em camadas, otimizada em Python:
--🥉 Camada Bronze (Raw): Preservação do dataset original do kaggle.
--🥈 Camada Silver (Trusted): Processo intensivo de limpeza, tratamento e padronização de nomes de holdings, remoção de duplicatas e ingestão de dados históricos dentre os principais a classificação do jogo pelo critic_score, fabricantes, geração dos consoles, anos de atividade do console, data de lançamentos dos consoles e paises de developers e publishers
--🥇 Camada Gold (Refined): Agregação de dados para criação dos KPIs de negócio (ROI, Attach Rate, Market Share) prontos para consumo no Dashboard.
+- 🥉 **Camada Bronze (Raw)**: Preservação do dataset original do Kaggle.
+- 🥈 **Camada Silver (Trusted)**: Processo intensivo de limpeza, tratamento e padronização de nomes de holdings, remoção de duplicatas e ingestão de dados históricos dentre os principais a classificação do jogo pelo critic_score, fabricantes, geração dos consoles, anos de atividade do console, data de lançamentos dos consoles e países de developers e publishers.
+- 🥇 **Camada Gold (Refined)**: Agregação de dados para criação dos KPIs de negócio (ROI, Attach Rate, Market Share) prontos para consumo no Dashboard.
 
-## Integridade dos Dados
-A integridade dos dados foi conferida por check de nulos e anomalia de volume nas vendas (total_sales; na_sales, jp_sales, pal_sales, other_sales)
+## 🔍 Integridade dos Dados
+A integridade dos dados foi conferida por:
+- Verificação de valores nulos
+- Anomalias de volume nas vendas (total_sales, na_sales, jp_sales, pal_sales, other_sales)
 
 ## 📂 Arquitetura do Projeto
 ### A estrutura do repositório está organizada da seguinte forma:
