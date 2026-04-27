@@ -6,17 +6,17 @@
 
 ## 🎯 Problema de Negócio
 A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O problema central é a fragmentação de dados que impede a BrasCo. de prever o sucesso comercial de novos títulos. Esta solução busca responder:
-    1. Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
-    2. Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
-    3. Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
+1. Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
+2. Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
+3. Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
 
 ## 📈 Principas Resultados
 Os insights trazidos por esse painel KPIs de negocio respondem as perguntas acima:
-    - Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
-    - Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do genero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
-    - Para mitigação de risco, devemos construir títulos com nota alvo de 7.5 (Shooters são ótimo estando na casa do 7.2)
-    - Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos titulos com segurança)
-    - Investimento de Alto Risco🚨: O Genero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
+- Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
+- Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do genero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
+- Para mitigação de risco, devemos construir títulos com nota alvo de 7.5 (Shooters são ótimo estando na casa do 7.2)
+- Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos titulos com segurança)
+- Investimento de Alto Risco🚨: O Genero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
 
 ## 📂 Fonte de Dados
 Os dados utilizados são públicos e foram coletados via Kaggle:
@@ -33,9 +33,9 @@ As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste
 
 ## 🧱 Processo de Analise: Arquitetura de Dados (Medallion Architecture)
 Para garantir a confiabilidade, implementei uma lógica de processamento em camadas, otimizada em Python:
-    -🥉 Camada Bronze (Raw): Preservação do dataset original do kaggle.
-    -🥈 Camada Silver (Trusted): Processo intensivo de limpeza, tratamento e padronização de nomes de holdings, remoção de duplicatas e ingestão de dados históricos dentre os principais a classificação do jogo pelo critic_score, fabricantes, geração dos consoles, anos de atividade do console, data de lançamentos dos consoles e paises de developers e publishers
-    -🥇 Camada Gold (Refined): Agregação de dados para criação dos KPIs de negócio (ROI, Attach Rate, Market Share) prontos para consumo no Dashboard.
+-🥉 Camada Bronze (Raw): Preservação do dataset original do kaggle.
+-🥈 Camada Silver (Trusted): Processo intensivo de limpeza, tratamento e padronização de nomes de holdings, remoção de duplicatas e ingestão de dados históricos dentre os principais a classificação do jogo pelo critic_score, fabricantes, geração dos consoles, anos de atividade do console, data de lançamentos dos consoles e paises de developers e publishers
+-🥇 Camada Gold (Refined): Agregação de dados para criação dos KPIs de negócio (ROI, Attach Rate, Market Share) prontos para consumo no Dashboard.
 
 ## Integridade dos Dados
 A integridade dos dados foi conferida por check de nulos e anomalia de volume nas vendas (total_sales; na_sales, jp_sales, pal_sales, other_sales)
