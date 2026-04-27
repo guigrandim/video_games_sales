@@ -181,8 +181,6 @@ def region_premium_title(df1):
         Gráfico de barras horizontais com vendas premium por região.
     sales_global_premium_top : str
         Nome da região com maior volume de vendas premium.
-    sales_global_premium_per_region : pd.DataFrame
-        DataFrame com região e vendas premium em milhões.
     """
 
     # ── 1. Filtra títulos Premium ─────────────────────────────────────────────
@@ -246,7 +244,7 @@ def region_premium_title(df1):
         paper_bgcolor='rgba(0,0,0,0)',
     )
 
-    return fig, sales_global_premium_top, sales_global_premium_per_region
+    return fig, sales_global_premium_top
 
 #Função 4: Distribuição de Vendas por País
 def sales_per_country(df1):
@@ -479,12 +477,12 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('🏠 Home - Marketplace Overview')
-st.markdown(""" Métricas mostrando o tamanho do mercado e o comportamento geral de vendas """)
+st.markdown("""- Métricas mostrando o tamanho do mercado e o comportamento geral de vendas """)
 
 #Call the Functions
 kpi_total_sales_global, kpi_total_title_dataset, kpi_unique_titles = total_sales_and_titles(df1)                        # <- Função 1: Total de Vendas e Contagem de Titulos
 fig_sales_market_share, df_sales_global = market_share_per_region(df1)                                                  # <- Função 2: Market Share e Total de Vendas por Região
-fig_sales_premium_region, kpi_sales_global_premium, df_sales_global_premium_per_region  = region_premium_title(df1)     # <- Função 3: Total de Vendas Premium por Região
+fig_sales_premium_region, kpi_sales_global_premium, = region_premium_title(df1)                                         # <- Função 3: Total de Vendas Premium por Região
 fig_sales_world = sales_per_country(df1)                                                                                # <- Função 4: Mapa das Vendas de Jogos no Mundo.
 fig_top5_holdings = top5_holdings_ranking(df1)                                                                          # <- Função 5: Ranking das 5 maiores holdings por volume total de vendas
 
@@ -526,14 +524,7 @@ st.divider()
 
 with st.container():
     st.markdown("### Vendas Premium por Região")
-    col1, col2 = st.columns([2,1])
-    
-    with col1:
-        st.plotly_chart(fig_sales_premium_region, width='stretch')
-    
-    with col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.dataframe(df_sales_global_premium_per_region, width='stretch', hide_index = True)
+    st.plotly_chart(fig_sales_premium_region, width='stretch')
 
 st.divider()
 

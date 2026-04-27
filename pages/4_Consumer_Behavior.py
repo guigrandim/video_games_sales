@@ -216,6 +216,33 @@ def profitability_per_genre_critic(df1, min_sales=0.0):
         on='genre',
         how='inner',
     )
+    
+    # ── 4.1 Filtro de representatividade — remove gêneros com amostra pequena ─
+    MIN_TITLES = 20
+
+    critic_per_genre = critic_per_genre[
+        critic_per_genre['total_titles'] >= MIN_TITLES
+    ]
+    profitability_per_genre = profitability_per_genre[
+        profitability_per_genre['total_titles'] >= MIN_TITLES
+    ]
+
+    genre_combined = profitability_per_genre.merge(
+        critic_per_genre[['genre', 'mean_critic']],
+        on='genre',
+        how='inner',
+    )
+
+    MAX_AVG_SALES = genre_combined['avg_sales'].quantile(0.95)
+    genre_combined = genre_combined[
+        genre_combined['avg_sales'] <= MAX_AVG_SALES
+    ]
+    profitability_per_genre = profitability_per_genre[
+        profitability_per_genre['genre'].isin(genre_combined['genre'])
+    ]
+    critic_per_genre = critic_per_genre[
+        critic_per_genre['genre'].isin(genre_combined['genre'])
+    ]
 
     # ── 5. Fig1: Rentabilidade por gênero (barras + colorscale por volume) ────
     fig1 = go.Figure(go.Bar(
@@ -293,6 +320,11 @@ def profitability_per_genre_critic(df1, min_sales=0.0):
             '<extra></extra>'
         ),
     ))
+    
+    # ── Bandas de qualidade ── inserir aqui ───────────────────────────────────
+    score_min   = critic_per_genre['mean_critic'].min()
+    score_max   = critic_per_genre['mean_critic'].max()
+
 
     fig2.update_layout(
         title=dict(
@@ -304,7 +336,7 @@ def profitability_per_genre_critic(df1, min_sales=0.0):
             title='Pontuação média da crítica',
             showgrid=True,
             gridcolor='rgba(0,0,0,0.06)',
-            range=[0, critic_per_genre['mean_critic'].max() * 1.35],
+            range=[score_min * 0.95, score_max * 1.15],
         ),
         yaxis=dict(title='', categoryorder='total ascending'),
         height=max(400, len(critic_per_genre) * 36),
@@ -315,15 +347,15 @@ def profitability_per_genre_critic(df1, min_sales=0.0):
 
     # ── 7. Fig3: Scatter — Vendas × Crítica por gênero ───────────────────────
     fig3 = go.Figure(go.Scatter(
-        x=genre_combined['mean_critic'],                     # ← eixo X corrigido: era avg_sales
-        y=genre_combined['avg_sales'],                       # ← eixo Y corrigido: era mean_critic
+        x=genre_combined['mean_critic'],
+        y=genre_combined['avg_sales'],
         mode='markers+text',
         marker=dict(
             size=genre_combined['total_titles'],
             sizemode='area',
             sizeref=2. * genre_combined['total_titles'].max() / (40. ** 2),
             sizemin=6,
-            color=[genre_colors.get(g, '#888888') for g in genre_combined['genre']],  # ← paleta global
+            color=[genre_colors.get(g, '#888888') for g in genre_combined['genre']],
             line=dict(width=1.5, color='white'),
         ),
         text=genre_combined['genre'],
@@ -379,6 +411,26 @@ def profitability_per_genre_critic(df1, min_sales=0.0):
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
+    
+    # Anotações de quadrante — adicionadas após update_layout para não
+    # sobrescrever as anotações internas do add_hline / add_vline
+    quadrantes = [
+        dict(x=0.02, y=0.98, text='⚠ Nicho crítico<br><sup>Bem avaliado, vende pouco</sup>', xanchor='left',  yanchor='top'),
+        dict(x=0.98, y=0.98, text='★ Zona de ouro<br><sup>Bem avaliado e vende muito</sup>', xanchor='right', yanchor='top'),
+        dict(x=0.02, y=0.02, text='✗ Evitar<br><sup>Mal avaliado e vende pouco</sup>', xanchor='left',  yanchor='bottom'),
+        dict(x=0.98, y=0.02, text='⚡ Volume popular<br><sup>Mal avaliado, vende muito</sup>', xanchor='right', yanchor='bottom'),
+    ]
+
+    for q in quadrantes:
+        fig3.add_annotation(
+            x=q['x'], y=q['y'],
+            xref='paper', yref='paper',
+            text=q['text'],
+            showarrow=False,
+            xanchor=q['xanchor'],
+            yanchor=q['yanchor'],
+            font=dict(size=11, color='rgba(255,255,255,0.35)'),
+        )
 
     return fig1, fig2, fig3
 
@@ -578,6 +630,8 @@ def genre_migration_by_generation(df1):
     # ── 9. Fig2: Line Chart — Evolução do Market Share ────────────────────────
     fig2 = go.Figure()
 
+    pivot_area = pivot_area[pivot_area.index != '9th Gen']
+
     for genre in pivot_area.columns:
         color    = genre_colors.get(genre, '#888888')
         y_vals   = pivot_area[genre].tolist()
@@ -667,7 +721,7 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('👥 Preferência de Gênero - Consumer Behavior')
-st.markdown(""" Métricas relacionadas ao comportamento dos clientes segmentado por genero e região de forma temporal """)
+st.markdown("""- Métricas relacionadas ao comportamento dos clientes segmentado por genero e região de forma temporal """)
 
 #Call the Functions
 fig_sales_genre_region = sales_by_genre_heatmap(df1, min_sales=0.5)                                                            # <- Função 1 - Afinidade Regional (Vendas de Genero por Região)

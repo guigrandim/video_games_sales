@@ -74,15 +74,17 @@ def games_per_year(df1):
     )
     sales_by_year.columns = ['release_year', 'total_sales']
     sales_by_year = sales_by_year.merge(dominant_gen, on='release_year', how='left')
+    sales_by_year = sales_by_year[sales_by_year['total_sales'] > 33]
 
     # ── 4. Lançamentos únicos por ano ─────────────────────────────────────────
     release_by_year = (
         clean_dataset.groupby('release_year')['title']
-        .nunique()                                       # ← era count (contava duplicatas)
+        .nunique()
         .reset_index()
     )
     release_by_year.columns = ['release_year', 'unique_titles']
     release_by_year = release_by_year.merge(dominant_gen, on='release_year', how='left')
+    release_by_year = release_by_year[release_by_year['unique_titles'] > 50]
 
     # ── 5. Paleta por geração ─────────────────────────────────────────────────
     GEN_COLORS = {
@@ -603,11 +605,16 @@ def timeline_coexistencia_geracao(df1):
     """
     Gera um gráfico de linhas com o volume de vendas por geração ao longo
     dos anos, destacando os períodos de coexistência entre gerações consecutivas.
+    Retorna também um gráfico de barras empilhadas com o share percentual de
+    vendas por geração durante cada período de coexistência, e um DataFrame
+    com os dados de transição para análise estratégica de lançamentos.
 
     Responde às perguntas:
     "Por quanto tempo duas gerações coexistiram no mercado?"
     "Como as transições entre gerações impactaram o volume de vendas?"
     "Qual geração manteve relevância comercial por mais tempo após o lançamento da próxima?"
+    "Em qual momento é mais vantajoso começar a lançar títulos para a próxima geração?"
+    "Quando a nova geração ultrapassa 50% do share de vendas (ponto de cruzamento)?"
 
     Parâmetros
     ----------
@@ -618,9 +625,17 @@ def timeline_coexistencia_geracao(df1):
     -------
     fig : plotly.graph_objects.Figure
         Gráfico de linhas por geração com áreas de coexistência destacadas.
+
+    fig_share : plotly.graph_objects.Figure
+        Gráfico de barras empilhadas mostrando o share percentual de vendas
+        entre a geração atual e a próxima em cada ano de coexistência.
+        Inclui linha de referência em 50% (ponto de cruzamento).
+
+    df_resumo : pd.DataFrame
+        DataFrame com uma Uma linha por transição entre gerações consecutivas
     """
 
-    # ── 1. Limpeza e extração do ano ──────────────────────────────────────────
+        # ── 1. Limpeza e extração do ano ──────────────────────────────────────────
     df_clean = df1[df1['generation'] != 'OtherUnknown'].copy()
     df_clean['release_date'] = pd.to_datetime(df_clean['release_date'], errors='coerce')
     df_clean['release_year'] = df_clean['release_date'].dt.year
@@ -663,7 +678,7 @@ def timeline_coexistencia_geracao(df1):
     )
     lifecycle = lifecycle.sort_values('generation').reset_index(drop=True)
 
-    # ── 6. Figura ─────────────────────────────────────────────────────────────
+    # ── 6. Figura principal ───────────────────────────────────────────────────
     fig = go.Figure()
 
     # ── 7. Áreas de coexistência entre gerações consecutivas ──────────────────
@@ -757,7 +772,159 @@ def timeline_coexistencia_geracao(df1):
         paper_bgcolor='rgba(0,0,0,0)',
     )
 
-    return fig
+    # ── 9. Dados de share % por coexistência (uso interno) ────────────────────
+    def _recomendacao(share2y, crossover):
+        if share2y >= 38 and crossover <= 2: return 'Entrar já'
+        if share2y >= 25:                    return 'Janela ótima'
+        if share2y >= 15:                    return 'Observar'
+        return 'Aguardar'
+
+    registros_share = []
+
+    for i in range(len(lifecycle) - 1):
+        gen_atual   = lifecycle.iloc[i]
+        gen_proxima = lifecycle.iloc[i + 1]
+
+        overlap_start = int(gen_proxima['start_year'])
+        overlap_end   = int(gen_atual['end_year'])
+
+        if overlap_start >= overlap_end:
+            continue
+
+        vendas_old_serie = vendas_ano[vendas_ano['generation'] == gen_atual['generation']]
+        vendas_new_serie = vendas_ano[vendas_ano['generation'] == gen_proxima['generation']]
+
+        for ano in range(overlap_start, overlap_end + 1):
+            v_old = vendas_old_serie.loc[vendas_old_serie['release_year'] == ano, 'total_sales'].sum()
+            v_new = vendas_new_serie.loc[vendas_new_serie['release_year'] == ano, 'total_sales'].sum()
+            total = v_old + v_new
+
+            registros_share.append({
+                'transition'    : f"{gen_atual['generation']} → {gen_proxima['generation']}",
+                'old_gen'       : gen_atual['generation'],
+                'new_gen'       : gen_proxima['generation'],
+                'year'          : ano,
+                'years_elapsed' : ano - overlap_start + 1,
+                'old_share_pct' : round(v_old / total * 100, 1) if total > 0 else None,
+                'new_share_pct' : round(v_new / total * 100, 1) if total > 0 else None,
+            })
+
+    df_interno = pd.DataFrame(registros_share)
+
+    # Ponto de cruzamento por transição
+    crossovers = (
+        df_interno[df_interno['new_share_pct'] > 50]
+        .groupby('transition')['years_elapsed']
+        .min()
+        .reset_index()
+        .rename(columns={'years_elapsed': 'crossover_year_elapsed'})
+    )
+    df_interno = df_interno.merge(crossovers, on='transition', how='left')
+    df_interno = df_interno[df_interno['year'] <= 2018]
+
+    # ── 10. Gráfico de barras empilhadas de share % ───────────────────────────
+    fig2 = go.Figure()
+    gens_na_legenda = set()
+
+    for transition in df_interno['transition'].unique():
+        df_t    = df_interno[df_interno['transition'] == transition]
+        old_gen = df_t['old_gen'].iloc[0]
+        new_gen = df_t['new_gen'].iloc[0]
+
+        # rótulo único: ano + sigla da transição
+        short = transition.replace(' Gen', '').replace(' → ', '→')
+        x_labels = df_t['year'].astype(str) + f'<br><sup>{short}</sup>'
+
+        fig2.add_trace(go.Bar(
+            x=x_labels,
+            y=df_t['old_share_pct'],
+            name=old_gen,
+            marker_color=GEN_COLORS.get(old_gen, '#888'),
+            legendgroup=old_gen,
+            showlegend=old_gen not in gens_na_legenda,
+            hovertemplate='Ano: %{x}<br>' + old_gen + ': %{y:.1f}%<extra></extra>',
+        ))
+        gens_na_legenda.add(old_gen)
+
+        fig2.add_trace(go.Bar(
+            x=x_labels,
+            y=df_t['new_share_pct'],
+            name=new_gen,
+            marker_color=GEN_COLORS.get(new_gen, '#aaa'),
+            legendgroup=new_gen,
+            showlegend=new_gen not in gens_na_legenda,
+            hovertemplate='Ano: %{x}<br>' + new_gen + ': %{y:.1f}%<extra></extra>',
+        ))
+        gens_na_legenda.add(new_gen)
+
+    fig2.add_hline(
+        y=50,
+        line=dict(color='rgba(252,129,129,0.7)', width=1.5, dash='dot'),
+        annotation_text='50%',
+        annotation_position='top right',
+        annotation_font=dict(size=10, color='#FC8181'),
+    )
+
+    fig2.update_layout(
+        title=dict(
+            text='Share de Vendas — Períodos de Coexistência',
+            font=dict(size=16),
+            x=0.01,
+        ),
+        barmode='stack',
+        xaxis=dict(
+            title='Ano (por transição)',
+            tickangle=45,
+            showgrid=False,
+            type='category',
+        ),
+        yaxis=dict(
+            title='Share (%)',
+            range=[0, 100],
+            ticksuffix='%',
+            showgrid=True,
+            gridcolor='rgba(0,0,0,0.06)',
+        ),
+        hovermode='x unified',
+        legend=dict(orientation='h', yanchor='bottom', y=-0.40, xanchor='left', x=0),
+        height=420,
+        margin=dict(t=60, l=10, r=20, b=80),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+
+    # ── 11. DataFrame resumido para exibição estratégica ─────────────────────
+    resumo = []
+    for t in df_interno['transition'].unique():
+        df_t      = df_interno[df_interno['transition'] == t]
+        start     = int(df_t['year'].min())
+        end       = int(df_t['year'].max())
+        duracao   = end - start + 1
+        crossover = df_t['crossover_year_elapsed'].iloc[0]
+        cross_ano = int(start + crossover - 1) if pd.notna(crossover) else None
+
+        # share no ano anterior ao cruzamento (janela estratégica real)
+        ano_entrada = crossover - 1 if pd.notna(crossover) else None
+        share_entrada = df_t[df_t['years_elapsed'] == ano_entrada]['new_share_pct'].values
+        share_entrada = float(share_entrada[0]) if len(share_entrada) > 0 else 0.0
+        
+        # share no 1º ano após lançamento (years_elapsed == 2)
+        share_1ano = df_t[df_t['years_elapsed'] == 2]['new_share_pct'].values
+        share_1ano = float(share_1ano[0]) if len(share_1ano) > 0 else 0.0
+
+        resumo.append({
+            'Transição'                : t,
+            'Período coexist.'         : f'{start} – {end}',
+            'Duração'                  : f'{duracao} anos',
+            'Ponto de cruzamento'      : f'{cross_ano} (ano {int(crossover)})' if cross_ano else '—',
+            'Share nova gen. (ano -1)' : f'{share_entrada:.0f}% (ano {int(ano_entrada)})' if ano_entrada else '—',
+            'Share nova gen. (1º ano)' : f'{share_1ano:.0f}%',
+            'Recomendação'             : _recomendacao(share_entrada, crossover if pd.notna(crossover) else 99),
+        })
+    
+    df_resumo = pd.DataFrame(resumo)
+
+    return fig, fig2, df_resumo
 
 #Função Auxiliar - Retorna Figura Vazia - Erro quando não tenho dados  
 def _empty_fig(msg):
@@ -788,14 +955,14 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('⏳ Evolução das Gerações - Ciclos de Mercado')
-st.markdown(""" Métricas apresentando o comportamento e a qualidade das vendas das empresas na indústria de forma temporal """)
+st.markdown("""- Métricas apresentando o comportamento e a qualidade das vendas das empresas na indústria de forma temporal """)
 
 #Call the Functions
-fig_sales_per_year, fig_release_per_year = games_per_year(df1)  # <- Função 1 - Ciclo de Vendas e Lançamentos Geracional
-fig_quality_score_history = quality_score(df1)                  # <- Função 2 - Qualidade dos Jogos ao Longo dos Anos
-market_share_manf = market_share_per_manufacture(df1)           # <- Função 3 - Market Share por Fabricante
-sales_peak_generation = timeline_peak_generation(df1)           # <- Função 4 - Pico de Vendas por Geração
-coexist_generation = timeline_coexistencia_geracao(df1)         # <- Função 5 - Coexistencia de Geraçã - Vendas por Geração
+fig_sales_per_year, fig_release_per_year = games_per_year(df1)                                                  # <- Função 1 - Ciclo de Vendas e Lançamentos Geracional
+fig_quality_score_history = quality_score(df1)                                                                  # <- Função 2 - Qualidade dos Jogos ao Longo dos Anos
+fig_market_share_manf = market_share_per_manufacture(df1)                                                       # <- Função 3 - Market Share por Fabricante
+fig_sales_peak_generation = timeline_peak_generation(df1)                                                       # <- Função 4 - Pico de Vendas por Geração
+fig_coexist_generation, fig_share_generation, df_share_generation  = timeline_coexistencia_geracao(df1)         # <- Função 5 - Coexistencia de Geração - Vendas por Geração
 
 st.divider()
 
@@ -811,17 +978,24 @@ with tab1:
  
     with st.container():
         st.markdown("### Dominância de Fabricante - Market Share")
-        st.plotly_chart(market_share_manf, width='stretch')
+        st.plotly_chart(fig_market_share_manf, width='stretch')
         
     st.divider()
     
     with st.container():
         st.markdown("### Ciclo de Vida e Comportamento Historico de Vendas")
-        st.plotly_chart(sales_peak_generation, width='stretch')
+        st.plotly_chart(fig_sales_peak_generation, width='stretch')
+    
+    st.divider()
     
     with st.container():
-        st.plotly_chart(coexist_generation, width='stretch')
-
+        st.markdown("### Coexistencia e Comportamento das Vendas Historico")
+        st.plotly_chart(fig_coexist_generation, use_container_width=True)
+        st.plotly_chart(fig_share_generation, use_container_width=True)
+        st.dataframe(df_share_generation, use_container_width=True, hide_index=True)
+    
+    st.divider()
+    
 with tab2:
     with st.container():
         st.markdown("### Ciclo de Lançamentos Geracional - Lançamentos por Ano")

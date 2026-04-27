@@ -648,7 +648,7 @@ df1, filter_genero, filter_console, filter_manufacture, filter_generation = rend
 
 #Create a Header
 st.title ('🎮 Plataforma e Hardware - Eficiencia de Ativos')
-st.markdown(""" Métricas relacionadas a qualidade e quantidade de vendas das plataformas ao longo dos anos """)
+st.markdown("""- Métricas relacionadas a qualidade e quantidade de vendas das plataformas ao longo dos anos """)
 
 #Call the Functions
 fig_market_share_consoles = market_share_consoles_history(df1)                 # <- Função 1 - Market Share de Consoles na Historia
