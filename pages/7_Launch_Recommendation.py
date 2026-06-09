@@ -64,7 +64,35 @@ def render_ranking_chart(df_scores, title):
 
 
 def render_detail_table(df_scores):
-    pass  # implemented in Task 5
+    n = len(df_scores)
+    row_colors = ['#1a1a2e' if i % 2 == 0 else '#16213e' for i in range(n)]
+
+    fig = go.Figure(data=[go.Table(
+        header=dict(
+            values=['<b>Gênero</b>', '<b>Oportunidade</b>', '<b>Risco</b>',
+                    '<b>Melhor Plataforma</b>', '<b>Melhor Timing</b>', '<b>Nota Mínima</b>'],
+            fill_color='#2c3e50',
+            font=dict(color='white', size=13),
+            align='left',
+            height=32,
+        ),
+        cells=dict(
+            values=[
+                df_scores['genre'],
+                df_scores['opportunity_score'],
+                df_scores['risk_score'],
+                df_scores['best_platform'].fillna('—'),
+                df_scores['best_timing'].fillna('—'),
+                df_scores['min_score'].fillna('—'),
+            ],
+            fill_color=[row_colors] * 6,
+            font=dict(color='white', size=12),
+            align='left',
+            height=28,
+        ),
+    )])
+    fig.update_layout(margin=dict(l=0, r=0, t=0, b=0), height=min(60 + n * 30, 420))
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ── Main layout ───────────────────────────────────────────────────────────────
@@ -79,3 +107,4 @@ render_kpi_cards(df_hist)
 st.divider()
 st.subheader('📊 Benchmark Histórico — Todas as Gerações')
 render_ranking_chart(df_hist, 'Ranking por Oportunidade vs Risco — Histórico Completo')
+render_detail_table(df_hist)
