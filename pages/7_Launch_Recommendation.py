@@ -108,3 +108,18 @@ st.divider()
 st.subheader('📊 Benchmark Histórico — Todas as Gerações')
 render_ranking_chart(df_hist, 'Ranking por Oportunidade vs Risco — Histórico Completo')
 render_detail_table(df_hist)
+
+st.divider()
+st.subheader('🎯 Implicação — Geração Atual')
+
+MIN_TITLES = 50
+df_curr_raw = get_current_gen_df(df)
+eligible = df_curr_raw.groupby('genre')['total_sales'].count()
+df_curr_raw = df_curr_raw[df_curr_raw['genre'].isin(eligible[eligible >= MIN_TITLES].index)]
+
+if df_curr_raw.empty:
+    st.warning('Dados insuficientes para a geração atual (menos de 50 títulos por gênero). Exibindo apenas o benchmark histórico.')
+else:
+    df_curr = compute_genre_scores(df_curr_raw)
+    render_ranking_chart(df_curr, 'Ranking por Oportunidade vs Risco — Geração Atual')
+    render_detail_table(df_curr)
