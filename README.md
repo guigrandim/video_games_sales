@@ -17,9 +17,9 @@ A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desa
 |:---:|:---:|
 | ![Competitive Intelligence](./assets/img/competitive_intelligence.png) | ![Consumer Behavior](./assets/img/consumer_behavior.png) |
 
-| Market Cycles — Gantt de Ciclo de Vida de Hardware |
-|:---:|
-| ![Market Cycles Gantt](./assets/img/market_cycles_gantt.png) |
+| Market Cycles — Gantt de Ciclo de Vida de Hardware | Market Cycles — Curva de Vendas por Geração |
+|:---:|:---:|
+| ![Market Cycles Gantt](./assets/img/market_cycles_gantt.png) | ![Market Cycles](./assets/img/market_cycles.png) |
 
 ## 🔍 Premissas para Análise
 - Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
@@ -67,14 +67,24 @@ O dashboard está dividido em seis páginas com visões estratégicas do mercado
 
 ## 📈 Principais Resultados
 Os insights trazidos por esse painel de KPIs de negócio respondem as perguntas acima:
+
+**Mercado & Geração:**
 - Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
-- Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do gênero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
-- Para mitigação de risco, devemos construir títulos com nota alvo de 7.5 (Shooters são ótimo estando na casa do 7.2)
-- Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos títulos com segurança)
-- Investimento de Alto Risco 🚨: O Gênero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
+- Ficar atento com a mudança de geração: a janela de oportunidade começa a partir do 3º ano do console, quando a relação de vendas atinge 70/30 (Antiga/Nova), permitindo migrar investimentos em novos títulos com segurança
+
+**Gênero & Parceria:**
+- Associação com a Microsoft Corporation garante maior receita com menor exigência no Ticket por Ponto de Score ($0.32M), focando no desenvolvimento do gênero **Shooter** — melhor relação entre Média da Crítica vs. Média de Vendas
+- Para mitigação de risco, construir títulos com **nota alvo ≥ 7.5** (Shooters performam bem a partir de 7.2)
+
+**Síntese — Launch Recommendation (Página 7):**
+- O score composto de **Oportunidade** (40% volume de vendas + 30% alcance geográfico + 30% multiplicador de crítica) e **Risco** (40% concentração regional + 30% sensibilidade de vendas + 30% saturação de mercado) confirma o **Shooter como melhor aposta histórica**: alta média de vendas, amplo alcance geográfico e forte multiplicador de crítica
+- **RPG: investimento de alto risco** 🚨 — boa avaliação crítica, mas vendas altamente concentradas no Japão, o que eleva o score de risco. Requer parceria com a Bandai e estúdio local para viabilizar apelo regional
+- A visão por geração revela que a última geração de consoles apresenta reconfiguração de gêneros líderes, sendo Sports e Racing os que mais crescem em penetração — oportunidade de diversificação de portfólio
 
 ## 👩‍💻 Conclusão
-O objetivo desse projeto é criar um conjunto de gráficos e/ou tabelas para exibir as métricas ao CEO da melhor forma possível. Os resultados demonstram que baseado na análise histórica de mercado, o foco deve ser na América do Norte (37% do market share) em parceria com a Microsoft Corporation para otimizar a receita com um baixo custo por ponto de score ($0,32M) focando o desenvolvimento em títulos do gênero shooter e observando sempre o 3º ano da geração de novos consoles (quando a curva de vendas começa a subir para a nova geração). A página de síntese (Launch Recommendation) consolida todas as dimensões em um score de oportunidade e risco por gênero, permitindo decisões de lançamento baseadas em evidências históricas.
+O objetivo desse projeto é criar um conjunto de gráficos e/ou tabelas para exibir as métricas ao CEO da melhor forma possível. Os resultados demonstram que, baseado na análise histórica de mercado, o foco deve ser na **América do Norte** (37% do market share) em parceria com a **Microsoft Corporation** para otimizar a receita com baixo custo por ponto de score ($0,32M), desenvolvendo títulos do gênero **Shooter** e observando o 3º ano da geração de novos consoles — ponto em que a curva de vendas começa a migrar para a nova plataforma.
+
+A página de síntese **Launch Recommendation** (Página 7) consolida todas as seis dimensões de análise em um único score de oportunidade e risco por gênero. O modelo quantifica, de forma reproduzível, qual gênero maximiza retorno com menor exposição ao risco regional e à saturação de mercado, transformando seis painéis de análise em uma recomendação de lançamento acionável e baseada em evidências históricas.
 
 ## 🛠️ Stack Técnica
 As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste projeto:
