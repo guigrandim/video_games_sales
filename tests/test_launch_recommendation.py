@@ -37,7 +37,7 @@ def test_scores_in_valid_range(sample_df):
 
 def test_required_columns_present(sample_df):
     result = compute_genre_scores(sample_df)
-    required = {'genre', 'opportunity_score', 'risk_score', 'best_platform', 'best_timing', 'min_score'}
+    required = {'genre', 'opportunity_score', 'risk_score', 'best_platform', 'best_timing', 'min_score', 'title_count'}
     assert required.issubset(set(result.columns))
 
 
