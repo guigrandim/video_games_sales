@@ -56,7 +56,7 @@ def render_ranking_chart(df_scores, title):
 
     Os gêneros são ordenados de menor para maior opportunity_score no eixo Y,
     de forma que o melhor gênero aparece no topo. Ambas as séries compartilham
-    o mesmo eixo X (0–100), permitindo comparação visual direta entre oportunidade
+    o mesmo eixo X (0-100), permitindo comparação visual direta entre oportunidade
     e risco por gênero.
 
     Responde às perguntas:
@@ -75,7 +75,7 @@ def render_ranking_chart(df_scores, title):
     -------
     fig : plotly.graph_objects.Figure
         Gráfico com trace Bar (oportunidade) e trace Scatter (risco) sobre eixo
-        compartilhado 0–100, renderizado via st.plotly_chart.
+        compartilhado 0-100, renderizado via st.plotly_chart.
     """
     df_sorted = df_scores.sort_values('opportunity_score', ascending=True)
 
