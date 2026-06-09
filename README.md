@@ -1,5 +1,7 @@
 # BrasCo - Gaming Ltd: Visão Estratégica & ROI
 
+⚠️ O app pode levar ~30s para inicializar se estiver inativo.
+
 Link para o projeto: https://brasco-videogames-sales.streamlit.app
 
 <p align="center">
@@ -7,15 +9,26 @@ Link para o projeto: https://brasco-videogames-sales.streamlit.app
 </p>
 
 ## 🎯 Problema de Negócio
-A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O objetivo do projeto é entender o mercado de video games global direcionando o lançamento de de novos títulos para o sucesso comercial da empresa.
+A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O objetivo do projeto é entender o mercado de video games global direcionando o lançamento de novos títulos para o sucesso comercial da empresa.
+
+## 📸 Dashboard
+
+| Competitive Intelligence — Treemap de Market Share | Consumer Behavior — Heatmap de Afinidade de Gênero |
+|:---:|:---:|
+| ![Competitive Intelligence](./assets/img/competitive_intelligence.png) | ![Consumer Behavior](./assets/img/consumer_behavior.png) |
+
+| Market Cycles — Gantt de Ciclo de Vida de Hardware |
+|:---:|
+| ![Market Cycles Gantt](./assets/img/market_cycles_gantt.png) |
 
 ## 🔍 Premissas para Análise
 - Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
 - Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
-- Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
+- Qual melhor oportunidade de faturamento levando em conta o custo-benefício para lançamento de jogos?
 
-## 📈 Estratégias para Solução do problema
-#### O dashboard está dividido em seis paginas com visão estratégicas do mercado com relação a empresas, consoles e consumidores. Todas as páginas são acessíveis pelo menu lateral e os gráficos são interativos podendo ser filtrados pela geração dos consoles e as principais empresas do mercado, além de um filtro avançado.
+## 📈 Estratégias para Solução do Problema
+
+O dashboard está dividido em seis páginas com visões estratégicas do mercado em relação a empresas, consoles e consumidores. Todas as páginas são acessíveis pelo menu lateral e os gráficos são interativos, podendo ser filtrados pela geração dos consoles e as principais empresas do mercado, além de um filtro avançado.
 
 1. **Marketplace Overview**
 - Focada em métricas de volume total do mercado e dominância geográfica.
@@ -27,7 +40,7 @@ A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desa
 - Métricas Chave: Crescimento de 123% nas vendas a partir do 3º ano da geração, Relação de Transição 70/30 (Antiga/Nova) e Ano de Pico de Vendas.
 - Gráficos: Gráfico de Linhas de Ciclo de Vendas Geracional e Gráfico de Gantt de Ciclo de Vida de Hardware.
 
-3. **Asset Efficieny**
+3. **Asset Efficiency**
 - Focada em métricas de eficiência de conversão de hardware em software e longevidade de plataformas.
 - Métricas Chave: Attach Rate (Vendas por Título), Longevidade Média de Consoles (11 anos para Sony) e Dias até o Primeiro Hit.
 - Gráficos: Gráfico de Barras de Attach Ratio por Console e Heatmap de Vitalidade de Hardware.
@@ -42,21 +55,26 @@ A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desa
 - Métricas Chave: Ticket por Ponto de Score ($0.32M para Microsoft), Market Share Global das Top Holdings (37% EA/MS) e Índice de Exportação.
 - Gráficos: Treemap de Market Share por Holding e Heatmap de Sinergia Nacional (Desenvolvedor x Distribuidor).
 
-6. **Predictive Vality**
+6. **Predictive Validity**
 - Focada em métricas de correlação entre qualidade (Score) e retorno financeiro para mitigação de risco.
 - Métricas Chave: Multiplicador de Vendas por Score, Threshold de Nota Alvo (8) e Index do Critic_Score.
-- Gráficos: Gráfico de Dispersão com Quadrantes (Hype vs. Pérolas Escondidas), Nota Otima de Aumento de Vendas.
+- Gráficos: Gráfico de Dispersão com Quadrantes (Hype vs. Pérolas Escondidas), Nota Ótima de Aumento de Vendas.
+
+7. **Launch Recommendation**
+- Síntese executiva que combina as 6 dimensões de análise em um score composto por gênero.
+- Métricas Chave: Score de Oportunidade (0–100), Score de Risco (0–100), Melhor Plataforma por Gênero e Nota Mínima Sugerida.
+- Gráficos: Ranking Horizontal de Oportunidade vs Risco (barras + marcadores) e Tabela de Sub-métricas por Gênero.
 
 ## 📈 Principais Resultados
-Os insights trazidos por esse painel KPIs de negocio respondem as perguntas acima:
+Os insights trazidos por esse painel de KPIs de negócio respondem as perguntas acima:
 - Direcionar os esforços para o mercado da América do Norte (NA) garantindo o acesso a 37% do mercado global
-- Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do genero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
+- Associação com a Microsoft Corporation (atingimos todos os mercados) garantindo maior receita com menor exigência no Ticket por Ponto de Score ($0.32M) e focando no desenvolvimento do gênero Shooter (excelente relação de "Média da Crítica vs. Média de Vendas")
 - Para mitigação de risco, devemos construir títulos com nota alvo de 7.5 (Shooters são ótimo estando na casa do 7.2)
-- Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos titulos com segurança)
-- Investimento de Alto Risco🚨: O Genero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
+- Ficar atento com a mudança de geração (janela de oportunidade a partir do 3º ano do console quando a relação de vendas atinge 70/30 (Antiga/Nova) migrando os investimentos em novos títulos com segurança)
+- Investimento de Alto Risco 🚨: O Gênero de RPG de boa avaliação com baixa venda devido a nicho ser concentrado no Japão (temos que buscar a Bandai como parceira e um estúdio local para produzir uma história com apelo ao local)
 
 ## 👩‍💻 Conclusão
-O objetivo desse projeto é criar um conjunto de gráficos e/ou tabelas para exibir as métricas ao CEO da melhor forma possível. Os resultados demonstram que baseado na análise histórica de mercado, o foco deve ser na América do Norte (37% do market share) em parceria com a Microsoft Corportion para otimizar a receita com um baixo custo por ponto de score ($0,32M) focando o desenvolvimento em titulos do genero shooter e observando sempre o 3º ano da geração de novos consoles (quando a curva de vendas começa a subir para a nova geração)
+O objetivo desse projeto é criar um conjunto de gráficos e/ou tabelas para exibir as métricas ao CEO da melhor forma possível. Os resultados demonstram que baseado na análise histórica de mercado, o foco deve ser na América do Norte (37% do market share) em parceria com a Microsoft Corporation para otimizar a receita com um baixo custo por ponto de score ($0,32M) focando o desenvolvimento em títulos do gênero shooter e observando sempre o 3º ano da geração de novos consoles (quando a curva de vendas começa a subir para a nova geração). A página de síntese (Launch Recommendation) consolida todas as dimensões em um score de oportunidade e risco por gênero, permitindo decisões de lançamento baseadas em evidências históricas.
 
 ## 🛠️ Stack Técnica
 As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste projeto:
@@ -99,7 +117,7 @@ video_games_sales/
 ```
 
 ## 👩‍💻 Autor
- Desenvolvido por Guilherme Grandim como um projeto de portifólio em Ciencias/Analise de Dados</br>
+ Desenvolvido por Guilherme Grandim como um projeto de portfólio em Ciências/Análise de Dados</br>
  Sinta-se à vontade para entrar em contato ou contribuir com o projeto!
  Linkedin:[ℹ️](https://www.linkedin.com/in/guilherme-grandim/)
  Gmail: [📧](mailto:gui.grandim@gmail.com)
