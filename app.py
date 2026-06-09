@@ -83,6 +83,7 @@ def build_navigation() -> st.navigation:
     consumer_behavior        = st.Page("pages/4_Consumer_Behavior.py", title="Preferência de Gênero",    icon="👥")
     competitive_intelligence = st.Page("pages/5_Competitive_Intelligence.py", title="Holdings e Geopolítica",   icon="🏢")
     predictive_validity      = st.Page("pages/6_Predictive_Validity.py", title="Qualidade vs. Vendas", icon="⭐")
+    launch_recommendation    = st.Page("pages/7_Launch_Recommendation.py", title="Launch Recommendation", icon="🏆")
 
     return st.navigation([
         home,
@@ -92,6 +93,7 @@ def build_navigation() -> st.navigation:
         consumer_behavior,
         competitive_intelligence,
         predictive_validity,
+        launch_recommendation,
     ])
 
 # ==================================
