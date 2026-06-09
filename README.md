@@ -10,9 +10,9 @@ Link para o projeto: https://brasco-videogames-sales.streamlit.app
 A BrasCo é uma holding em expansão no setor de entretenimento, enfrenta o desafio de alocar capital de forma eficiente em um mercado de games saturado e de alto risco. O objetivo do projeto é entender o mercado de video games global direcionando o lançamento de de novos títulos para o sucesso comercial da empresa.
 
 ## 🔍 Premissas para Análise
-1. Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
-2. Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
-3. Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
+- Quais estúdios apresentam o melhor custo-benefício de desenvolvimento (Ticket por Ponto de Score)?
+- Onde estão as oportunidades de mercado negligenciadas pela concorrência (Pérolas Escondidas)?
+- Qual melhor oportunidade de faturamento levando em conta o custo beneficio para lançamento de jogos ?
 
 ## 📈 Estratégias para Solução do problema
 #### O dashboard está dividido em seis paginas com visão estratégicas do mercado com relação a empresas, consoles e consumidores. Todas as páginas são acessíveis pelo menu lateral e os gráficos são interativos podendo ser filtrados pela geração dos consoles e as principais empresas do mercado, além de um filtro avançado.
