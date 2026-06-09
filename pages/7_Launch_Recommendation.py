@@ -34,7 +34,33 @@ def render_kpi_cards(df_scores):
 
 
 def render_ranking_chart(df_scores, title):
-    pass  # implemented in Task 4
+    df_sorted = df_scores.sort_values('opportunity_score', ascending=True)
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=df_sorted['opportunity_score'],
+        y=df_sorted['genre'],
+        orientation='h',
+        name='Oportunidade',
+        marker_color='#2ecc71',
+        opacity=0.85,
+    ))
+    fig.add_trace(go.Scatter(
+        x=df_sorted['risk_score'],
+        y=df_sorted['genre'],
+        mode='markers',
+        name='Risco',
+        marker=dict(symbol='diamond', color='#e74c3c', size=12),
+    ))
+    fig.update_layout(
+        title=title,
+        xaxis=dict(title='Score (0–100)', range=[0, 100]),
+        height=420,
+        template='plotly_dark',
+        legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1),
+        margin=dict(l=10, r=10, t=60, b=10),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def render_detail_table(df_scores):
@@ -49,3 +75,7 @@ df = dataset_clean().copy()
 df_hist = compute_genre_scores(df)
 
 render_kpi_cards(df_hist)
+
+st.divider()
+st.subheader('📊 Benchmark Histórico — Todas as Gerações')
+render_ranking_chart(df_hist, 'Ranking por Oportunidade vs Risco — Histórico Completo')
