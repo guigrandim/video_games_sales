@@ -88,7 +88,7 @@ A página de síntese **Launch Recommendation** (Página 7) consolida todas as s
 
 ## 🛠️ Stack Técnica
 As seguintes ferramentas e bibliotecas foram utilizadas no desenvolvimento deste projeto:
-- Linguagem: Python 3.8+
+- Linguagem: Python 3.10
 - Framework Web: Streamlit
 - Manipulação de Dados: Pandas, NumPy
 - Visualização de Dados: Plotly
